@@ -145,7 +145,8 @@ public class Model extends Observable {
             }
         }
 
-//        board.setViewingPerspective(Side.NORTH);
+        //回到初始状态的视角
+        board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
