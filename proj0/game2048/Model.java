@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author LMS
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -111,9 +111,59 @@ public class Model extends Observable {
         changed = false;
 
         // TODO: Modify this.board (and perhaps this.score) to account
+        int size = board.size();
+
+        // 设置相对方向，通过相对方向使得代码统一
+        board.setViewingPerspective(side);
+
+        //只能一次叠加
+        boolean whetherFirst = true;
+
+        for (int col = 0; col < size; col += 1) {
+            for (int row = size-2; row >= 0; row -= 1) {   //从倒数第二行开始
+                Tile t1 = board.tile(col, row);
+                if (t1 != null) {
+                    for (int row2 = row + 1; row2 < size; row2 += 1) {   //观察当前行的下一行
+                        Tile t2 = board.tile(col, row2);
+                        if (t2 != null) {
+                            if (t1.value() == t2.value()) {
+                                if(whetherFirst) {
+                                    board.move(col, row2, t1);
+                                    t1 = board.tile(col, row2);
+                                    changed = true;
+                                    score += t1.value();
+                                    whetherFirst = false;
+                                }
+                            }
+                        } else {
+                            board.move(col, row2, t1);
+                            t1 = board.tile(col, row2);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+//        for (int col = 0; col < board.size(); col += 1) {
+//            for (int row = board.size() - 1; row >= 0; row -= 1) {
+//                Tile t1 = board.tile(col, row);
+//                if (t1 == null) {
+//                    for (int row2 = row - 1; row2 >= 0; row2 -= 1) {
+//                        Tile t2 = board.tile(col, row2);
+//                        if (t2 != null) {
+//                            board.move(col, row, t2);
+//                            changed = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//            }
+//        }
+
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+//        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
@@ -138,6 +188,14 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for (int row = 0; row < size; row += 1) {
+            for (int col = 0; col < size; col += 1) {
+                if(b.tile(col, row) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +206,16 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        int size = b.size();
+        for (int row = 0; row < size; row += 1) {
+            for (int col = 0; col < size; col += 1) {
+                if(b.tile(col, row) != null) {
+                    if(b.tile(col, row).value() == MAX_PIECE) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -158,7 +226,36 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        // TODO: Fill in this function
+        int size = b.size();
+        for (int row = 0; row < size; row += 1) {
+            for (int col = 0; col < size; col += 1) {
+                if(b.tile(col, row) == null) {
+                    return true;
+                } else {
+                    if( col-1 >= 0 ) {
+                        if(b.tile(col, row).value() == b.tile(col-1, row).value()) {
+                            return true;
+                        }
+                    }
+                    if( row-1 >= 0 ) {
+                        if(b.tile(col, row).value() == b.tile(col, row-1).value()) {
+                            return true;
+                        }
+                    }
+                    if( col+1 < size ) {
+                        if(b.tile(col, row).value() == b.tile(col+1, row).value()) {
+                            return true;
+                        }
+                    }
+                    if( row+1 < size ) {
+                        if(b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
         return false;
     }
 

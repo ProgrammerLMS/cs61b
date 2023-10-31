@@ -75,6 +75,14 @@ public class TestUpOnly extends TestUtils {
 
         updateModel(before, 0, 0, false);
         String prevBoard = model.toString();
+        /* 执行完updateModel之后，实际上board变成了
+        *       {0, 0, 2, 0}
+                {0, 0, 2, 0}
+                {0, 0, 0, 0}
+                {0, 0, 2, 0}
+        * 所以尽管我们是往up方向走，但是在这个数组中，我们是往下移动
+        *
+        * */
         boolean changed = model.tilt(Side.NORTH);
         checkChanged(Side.NORTH, true, changed);
         checkModel(after, 4, 0, prevBoard, Side.NORTH);
