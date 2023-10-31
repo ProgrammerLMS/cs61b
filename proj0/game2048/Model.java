@@ -116,8 +116,8 @@ public class Model extends Observable {
         // 设置相对方向，通过相对方向使得代码统一
         board.setViewingPerspective(side);
 
-        //只能一次叠加
-        boolean whetherFirst = true;
+        //是否在一次tilt当中，已经被merge
+        boolean[][] whetherMerge = new boolean[size][size];
 
         for (int col = 0; col < size; col += 1) {
             for (int row = size-2; row >= 0; row -= 1) {   //从倒数第二行开始
@@ -127,12 +127,12 @@ public class Model extends Observable {
                         Tile t2 = board.tile(col, row2);
                         if (t2 != null) {
                             if (t1.value() == t2.value()) {
-                                if(whetherFirst) {
+                                if( !whetherMerge[t1.row()][t1.col()] && !whetherMerge[t2.row()][t2.col()]) {
                                     board.move(col, row2, t1);
                                     t1 = board.tile(col, row2);
+                                    whetherMerge[t1.row()][t1.col()] = true;
                                     changed = true;
                                     score += t1.value();
-                                    whetherFirst = false;
                                 }
                             }
                         } else {
@@ -145,25 +145,8 @@ public class Model extends Observable {
             }
         }
 
-//        for (int col = 0; col < board.size(); col += 1) {
-//            for (int row = board.size() - 1; row >= 0; row -= 1) {
-//                Tile t1 = board.tile(col, row);
-//                if (t1 == null) {
-//                    for (int row2 = row - 1; row2 >= 0; row2 -= 1) {
-//                        Tile t2 = board.tile(col, row2);
-//                        if (t2 != null) {
-//                            board.move(col, row, t2);
-//                            changed = true;
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
 //        board.setViewingPerspective(Side.NORTH);
+
         checkGameOver();
         if (changed) {
             setChanged();
@@ -234,22 +217,26 @@ public class Model extends Observable {
                     return true;
                 } else {
                     if( col-1 >= 0 ) {
-                        if(b.tile(col, row).value() == b.tile(col-1, row).value()) {
+                        if( b.tile(col-1, row) != null &&
+                                (b.tile(col, row).value() == b.tile(col-1, row).value()) ) {
                             return true;
                         }
                     }
                     if( row-1 >= 0 ) {
-                        if(b.tile(col, row).value() == b.tile(col, row-1).value()) {
+                        if( b.tile(col, row-1) != null &&
+                                (b.tile(col, row).value() == b.tile(col, row-1).value()) ) {
                             return true;
                         }
                     }
                     if( col+1 < size ) {
-                        if(b.tile(col, row).value() == b.tile(col+1, row).value()) {
+                        if( b.tile(col+1, row) != null &&
+                                (b.tile(col, row).value() == b.tile(col+1, row).value()) ) {
                             return true;
                         }
                     }
                     if( row+1 < size ) {
-                        if(b.tile(col, row).value() == b.tile(col, row+1).value()) {
+                        if(b.tile(col, row+1) != null &&
+                                (b.tile(col, row).value() == b.tile(col, row+1).value()) ) {
                             return true;
                         }
                     }
