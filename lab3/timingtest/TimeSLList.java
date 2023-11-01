@@ -29,6 +29,7 @@ public class TimeSLList {
         AList<Integer> opCounts = new AList<>();
         int index = 1000;
         for(int i=1;i <= 128000;i++ ) {
+            N.addLast(i);
             if( i == index ) {
                 Stopwatch sw = new Stopwatch();
                 for (int j = 0; j < 10000; j += 1){
