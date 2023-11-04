@@ -3,33 +3,33 @@ package deque;
 public class ArrayDeque<T> implements Deque<T>{
     private T[] items;
     private int size;
-    private int nextFirst;
-    private int nextLast;
+    private int base;
+    private int end;
 
     public ArrayDeque() {
         items = (T[]) new Object[8];
         size = 0;
-        nextFirst = 4;
-        nextLast = 5;
+        base = 4;
+        end = 5;
     }
 
     private void resize(int capacity) {
         T[] a = (T[]) new Object[capacity];
         int ind;
         for (int i = 0; i < size; i += 1) {
-            ind = arrayInd(i);
+            ind = arrayIndex(i);
             a[capacity / 4 + i] = items[ind];
         }
         items = a;
-        nextFirst = capacity / 4 - 1;
-        nextLast = nextFirst + size + 1;
+        base = capacity / 4 - 1;
+        end = base + size + 1;
     }
 
-    private int arrayInd(int ind) {
-        if (nextFirst + 1 + ind >= items.length) {
-            return nextFirst + 1 + ind - items.length;
+    private int arrayIndex(int ind) {
+        if (base + 1 + ind >= items.length) {
+            return base + 1 + ind - items.length;
         } else {
-            return nextFirst + 1 + ind;
+            return base + 1 + ind;
         }
     }
 
@@ -39,11 +39,11 @@ public class ArrayDeque<T> implements Deque<T>{
             resize((items.length * 2));
         }
 
-        items[nextFirst] = item;
-        if (nextFirst == 0) {
-            nextFirst = items.length - 1;
+        items[base] = item;
+        if (base == 0) {
+            base = items.length - 1;
         } else {
-            nextFirst -= 1;
+            base -= 1;
         }
         size = size + 1;
     }
@@ -54,11 +54,11 @@ public class ArrayDeque<T> implements Deque<T>{
             resize((items.length * 2));
         }
 
-        items[nextLast] = item;
-        if (nextLast == items.length - 1) {
-            nextLast = 0;
+        items[end] = item;
+        if (end == items.length - 1) {
+            end = 0;
         } else {
-            nextLast += 1;
+            end += 1;
         }
         size = size + 1;
     }
@@ -88,11 +88,11 @@ public class ArrayDeque<T> implements Deque<T>{
         if ((size < items.length / 4) && (size > 8)) {
             resize(items.length / 2);
         }
-        T item = items[arrayInd(0)];
-        int ind = arrayInd(0);
+        T item = items[arrayIndex(0)];
+        int ind = arrayIndex(0);
         items[ind] = null;
         size = size - 1;
-        nextFirst = ind;
+        base = ind;
         return item;
     }
 
@@ -104,17 +104,21 @@ public class ArrayDeque<T> implements Deque<T>{
         if ((size < items.length / 4) && (size > 8)) {
             resize(items.length / 2);
         }
-        T item = items[arrayInd(size - 1)];
-        int ind = arrayInd(size - 1);
+        T item = items[arrayIndex(size - 1)];
+        int ind = arrayIndex(size - 1);
         items[ind] = null;
         size = size - 1;
-        nextLast = ind;
+        end = ind;
         return item;
     }
 
     @Override
     public T get(int index) {
-        int ind =  arrayInd(index);
+        int ind =  arrayIndex(index);
         return items[ind];
+    }
+
+    public T[] getItems () {
+        return this.items;
     }
 }
