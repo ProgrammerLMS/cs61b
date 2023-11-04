@@ -2,7 +2,7 @@ package deque;
 import java.util.Iterator;
 
 /*you must implement Iterable<T> first, then you can use iterator*/
-public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
     private int size;
 
     private class DequeNode {
@@ -166,10 +166,10 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
         if (o == this) {
             return true;
         }
-        if (!(o instanceof LinkedListDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
-        LinkedListDeque<?> lld = (LinkedListDeque<?>) o;
+        Deque<?> lld = (Deque<?>) o;
         if (lld.size() != size) {
             return false;
         }

@@ -3,7 +3,7 @@ package deque;
 import java.util.Iterator;
 
 /*you must implement Iterable<T> first, then you can use iterator*/
-public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
     private T[] items;
     private int size;
     private int base;
@@ -126,10 +126,10 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         if (o == this) {
             return true;
         }
-        if (!(o instanceof ArrayDeque)) {
+        if (!(o instanceof Deque)) {
             return false;
         }
-        ArrayDeque<?> ad = (ArrayDeque<?>) o;
+        Deque<?> ad = (Deque<?>) o;
         if (ad.size() != size) {
             return false;
         }
