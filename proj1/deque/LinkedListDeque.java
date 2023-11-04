@@ -4,7 +4,7 @@ import java.util.Iterator;
 * double-ended queue
 * @author: LiMeng
 * */
-public class LinkedListDeque<T> implements Deque<T>{
+public class LinkedListDeque<T> implements Deque<T> {
     private int size;
 
     private class DequeNode {
@@ -12,10 +12,10 @@ public class LinkedListDeque<T> implements Deque<T>{
         private DequeNode next;
         private DequeNode pre;
 
-        public DequeNode (T _item, DequeNode _pre, DequeNode _next) {
-            item = _item;
-            next = _next;
-            pre = _pre;
+        public DequeNode (T item, DequeNode pre, DequeNode next) {
+            this.item = item;
+            this.next = next;
+            this.pre = pre;
         }
     }
 
@@ -31,7 +31,7 @@ public class LinkedListDeque<T> implements Deque<T>{
     /* item is never null */
     @Override
     public void addFirst(T item) {
-        if(item == null) {
+        if (item == null) {
             return;
         }
         DequeNode newNode = new DequeNode(item, null, null);
@@ -39,13 +39,13 @@ public class LinkedListDeque<T> implements Deque<T>{
         newNode.next = sentinel.next;
         sentinel.next.pre = newNode;
         sentinel.next = newNode;
-        size ++;
+        size = size + 1;
     }
 
     /* item is never null */
     @Override
     public void addLast(T item) {
-        if(item == null) {
+        if (item == null) {
             return;
         }
         DequeNode newNode = new DequeNode(item, null, null);
@@ -54,12 +54,7 @@ public class LinkedListDeque<T> implements Deque<T>{
         newNode.pre = lastNode;
         newNode.next = sentinel;
         sentinel.pre = newNode;
-        size ++;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return size == 0;
+        size = size + 1;
     }
 
     @Override
@@ -106,19 +101,19 @@ public class LinkedListDeque<T> implements Deque<T>{
         lastNode.next = null;
         lastNode.pre = null;
         lastNode.item = null;
-        size --;
+        size = size - 1;
         return item;
     }
 
     @Override
     public T get(int index) {
-        if(index < 0) {
+        if (index < 0) {
             return null;
         }
         int i = 0;
         for (DequeNode p = sentinel.next; p.item != null; p = p.next) {
             if (i != index) {
-                i ++;
+                i = i + 1;
             } else {
                 return p.item;
             }
@@ -127,43 +122,61 @@ public class LinkedListDeque<T> implements Deque<T>{
     }
 
     public T getRecursive(int index) {
-        if(index < 0) {
+        if (index < 0) {
             return null;
         }
         return getRecursive(index, 0, sentinel.next);
     }
 
-    private T getRecursive (int index, int i, DequeNode p) {
+    private T getRecursive(int index, int i, DequeNode p) {
         if (p.item == null) {
             return null;
         }
         if (i == index) {
             return p.item;
         }
-        return getRecursive(index,i+1, p.next);
+        return getRecursive(index,i + 1, p.next);
     }
 
     public Iterator<T> iterator() {
-        return null;
+        return new LinkedListDequeIterator();
+    }
+
+    private class LinkedListDequeIterator implements Iterator<T> {
+        private int wizPos;
+
+        private LinkedListDequeIterator() {
+            wizPos = 0;
+        }
+
+        public boolean hasNext() {
+            return wizPos < size;
+        }
+
+        public T next() {
+            T item = get(wizPos);
+            wizPos += 1;
+            return item;
+        }
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
         if (o == null) {
             return false;
         }
-        if (!(o instanceof Deque)) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof LinkedListDeque)) {
             return false;
         }
-        Deque<T> od = (Deque<T>) o;
-        if (od.size() != this.size()) {
+        LinkedListDeque<?> lld = (LinkedListDeque<?>) o;
+        if (lld.size() != size) {
             return false;
         }
         for (int i = 0; i < size; i++) {
-            if ( !(od.get(i).equals(this.get(i))) ) {
+            if (lld.get(i) != get(i)) {
                 return false;
             }
         }

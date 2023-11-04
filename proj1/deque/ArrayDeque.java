@@ -1,11 +1,14 @@
 package deque;
 
-public class ArrayDeque<T> implements Deque<T>{
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Deque<T> {
     private T[] items;
     private int size;
     private int base;
     private int end;
 
+    @SuppressWarnings("unchecked")
     public ArrayDeque() {
         items = (T[]) new Object[8];
         size = 0;
@@ -13,6 +16,7 @@ public class ArrayDeque<T> implements Deque<T>{
         end = 5;
     }
 
+    @SuppressWarnings("unchecked")
     private void resize(int capacity) {
         T[] a = (T[]) new Object[capacity];
         int ind;
@@ -69,11 +73,6 @@ public class ArrayDeque<T> implements Deque<T>{
     }
 
     @Override
-    public boolean isEmpty() {
-        return size == 0;
-    }
-
-    @Override
     public void printDeque() {
         for (T i : this.items) {
             System.out.print(i + " ");
@@ -118,7 +117,52 @@ public class ArrayDeque<T> implements Deque<T>{
         return items[ind];
     }
 
-    public T[] getItems () {
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof ArrayDeque)) {
+            return false;
+        }
+        ArrayDeque<?> ad = (ArrayDeque<?>) o;
+        if (ad.size() != size) {
+            return false;
+        }
+        for (int i = 0; i < size; i++) {
+            if (ad.get(i) != get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int wizPos;
+
+        private ArrayDequeIterator() {
+            wizPos = 0;
+        }
+
+        public boolean hasNext() {
+            return wizPos < size;
+        }
+
+        public T next() {
+            T item = get(wizPos);
+            wizPos += 1;
+            return item;
+        }
+    }
+
+    public T[] getItems() {
         return this.items;
     }
 }

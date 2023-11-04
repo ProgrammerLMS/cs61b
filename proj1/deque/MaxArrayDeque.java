@@ -3,7 +3,7 @@ package deque;
 import java.util.Comparator;
 
 /*为了代码的简洁性，不要copyArrayDeque的方法，而是使用继承：extends*/
-public class MaxArrayDeque<T> extends ArrayDeque<T>{
+public class MaxArrayDeque<T> extends ArrayDeque<T> {
     private Comparator<T> cmp;
 
     public MaxArrayDeque(Comparator<T> c) {
@@ -23,5 +23,26 @@ public class MaxArrayDeque<T> extends ArrayDeque<T>{
             }
         }
         return maxItem;
+    }
+
+    public T max() {
+        return max(cmp);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof MaxArrayDeque)) {
+            return false;
+        }
+        if (((MaxArrayDeque<?>) o).max() != max()) {
+            return false;
+        }
+        return super.equals(o);
     }
 }
