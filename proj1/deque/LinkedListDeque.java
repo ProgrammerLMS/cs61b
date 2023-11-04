@@ -4,7 +4,7 @@ import java.util.Iterator;
 * double-ended queue
 * @author: LiMeng
 * */
-public class LinkedListDeque<T> implements Deque<T> {
+public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
     private int size;
 
     private class DequeNode {
@@ -12,7 +12,7 @@ public class LinkedListDeque<T> implements Deque<T> {
         private DequeNode next;
         private DequeNode pre;
 
-        public DequeNode (T item, DequeNode pre, DequeNode next) {
+        DequeNode(T item, DequeNode pre, DequeNode next) {
             this.item = item;
             this.next = next;
             this.pre = pre;
@@ -85,7 +85,7 @@ public class LinkedListDeque<T> implements Deque<T> {
         firstNode.next = null;
         firstNode.pre = null;
         firstNode.item = null;
-        size --;
+        size = size - 1;
         return item;
     }
 
@@ -135,7 +135,7 @@ public class LinkedListDeque<T> implements Deque<T> {
         if (i == index) {
             return p.item;
         }
-        return getRecursive(index,i + 1, p.next);
+        return getRecursive(index, i + 1, p.next);
     }
 
     public Iterator<T> iterator() {

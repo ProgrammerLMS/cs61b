@@ -16,33 +16,16 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
         if (isEmpty()) {
             return null;
         }
-        T maxItem = this.get(0);
-        for (T i : this.getItems()) {
-            if (c.compare(i, maxItem) > 0) {
-                maxItem = i;
+        int maxIndex = 0;
+        for (int i = 1; i < size(); i++) {
+            if (c.compare(get(i), get(maxIndex)) > 0) {
+                maxIndex = i;
             }
         }
-        return maxItem;
+        return get(maxIndex);
     }
 
     public T max() {
         return max(cmp);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null) {
-            return false;
-        }
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof MaxArrayDeque)) {
-            return false;
-        }
-        if (((MaxArrayDeque<?>) o).max() != max()) {
-            return false;
-        }
-        return super.equals(o);
     }
 }
