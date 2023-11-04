@@ -1,9 +1,7 @@
 package deque;
 import java.util.Iterator;
-/*
-* double-ended queue
-* @author: LiMeng
-* */
+
+/*you must implement Iterable<T> first, then you can use iterator*/
 public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
     private int size;
 
@@ -176,7 +174,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
             return false;
         }
         for (int i = 0; i < size; i++) {
-            if (lld.get(i) != get(i)) {
+            if (!lld.get(i).equals(get(i))) {
                 return false;
             }
         }
