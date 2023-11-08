@@ -1,11 +1,9 @@
 package capers;
 
-import java.io.File;
-
 import static capers.Utils.*;
 
 /** Canine Capers: A Gitlet Prelude.
- * @author TODO
+ * @author Li
 */
 public class Main {
     /**
@@ -40,28 +38,30 @@ public class Main {
         if (args.length == 0) {
             Utils.exitWithError("Must have at least one argument");
         }
-
         CapersRepository.setupPersistence();
-        String text;
+        String text, name, breed;
+        int age;
         switch (args[0]) {
-        case "story":
-            /* This call has been handled for you. The rest will be similar. */
-            validateNumArgs("story", args, 2);
-            text = args[1];
-            CapersRepository.writeStory(text);
-            break;
-        case "dog":
-            validateNumArgs("dog", args, 4);
-            // TODO: make a dog
-            break;
-        case "birthday":
-            validateNumArgs("birthday", args, 2);
-            // TODO: celebrate this dog's birthday
-            break;
-        default:
-            exitWithError(String.format("Unknown command: %s", args[0]));
+            case "story":
+                validateNumArgs("story", args, 2);
+                text = args[1];
+                CapersRepository.writeStory(text);
+                break;
+            case "dog":
+                validateNumArgs("dog", args, 4);
+                name = args[1];
+                breed = args[2];
+                age = Integer.parseInt(args[3]);
+                CapersRepository.makeDog(name, breed, age);
+                break;
+            case "birthday":
+                validateNumArgs("birthday", args, 2);
+                name = args[1];
+                CapersRepository.celebrateBirthday(name);
+                break;
+            default:
+                exitWithError(String.format("Unknown command: %s", args[0]));
         }
-        return;
     }
 
     /**
