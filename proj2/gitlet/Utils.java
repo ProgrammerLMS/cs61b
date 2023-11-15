@@ -18,8 +18,7 @@ import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
 
-
-/** Assorted utilities.
+/* Assorted utilities.
  *
  * Give this file a good read as it provides several useful utility functions
  * to save you some time.
@@ -28,12 +27,12 @@ import java.util.List;
  */
 class Utils {
 
-    /** The length of a complete SHA-1 UID as a hexadecimal numeral. */
+    /* The length of a complete SHA-1 UID as a hexadecimal numeral. */
     static final int UID_LENGTH = 40;
 
     /* SHA-1 HASH VALUES. */
 
-    /** Returns the SHA-1 hash of the concatenation of VALS, which may
+    /*  Returns the SHA-1 hash of the concatenation of VALS, which may
      *  be any mixture of byte arrays and Strings. */
     static String sha1(Object... vals) {
         try {
@@ -57,7 +56,7 @@ class Utils {
         }
     }
 
-    /** Returns the SHA-1 hash of the concatenation of the strings in
+    /*  Returns the SHA-1 hash of the concatenation of the strings in
      *  VALS. */
     static String sha1(List<Object> vals) {
         return sha1(vals.toArray(new Object[vals.size()]));
@@ -65,7 +64,7 @@ class Utils {
 
     /* FILE DELETION */
 
-    /** Deletes FILE if it exists and is not a directory.  Returns true
+    /*  Deletes FILE if it exists and is not a directory.  Returns true
      *  if FILE was deleted, and false otherwise.  Refuses to delete FILE
      *  and throws IllegalArgumentException unless the directory designated by
      *  FILE also contains a directory named .gitlet. */
@@ -80,7 +79,7 @@ class Utils {
         }
     }
 
-    /** Deletes the file named FILE if it exists and is not a directory.
+    /*  Deletes the file named FILE if it exists and is not a directory.
      *  Returns true if FILE was deleted, and false otherwise.  Refuses
      *  to delete FILE and throws IllegalArgumentException unless the
      *  directory designated by FILE also contains a directory named .gitlet. */
@@ -90,7 +89,7 @@ class Utils {
 
     /* READING AND WRITING FILE CONTENTS */
 
-    /** Return the entire contents of FILE as a byte array.  FILE must
+    /*  Return the entire contents of FILE as a byte array.  FILE must
      *  be a normal file.  Throws IllegalArgumentException
      *  in case of problems. */
     static byte[] readContents(File file) {
@@ -104,14 +103,14 @@ class Utils {
         }
     }
 
-    /** Return the entire contents of FILE as a String.  FILE must
+    /*  Return the entire contents of FILE as a String.  FILE must
      *  be a normal file.  Throws IllegalArgumentException
      *  in case of problems. */
     static String readContentsAsString(File file) {
         return new String(readContents(file), StandardCharsets.UTF_8);
     }
 
-    /** Write the result of concatenating the bytes in CONTENTS to FILE,
+    /*  Write the result of concatenating the bytes in CONTENTS to FILE,
      *  creating or overwriting it as needed.  Each object in CONTENTS may be
      *  either a String or a byte array.  Throws IllegalArgumentException
      *  in case of problems. */
@@ -136,7 +135,7 @@ class Utils {
         }
     }
 
-    /** Return an object of type T read from FILE, casting it to EXPECTEDCLASS.
+    /*  Return an object of type T read from FILE, casting it to EXPECTEDCLASS.
      *  Throws IllegalArgumentException in case of problems. */
     static <T extends Serializable> T readObject(File file,
                                                  Class<T> expectedClass) {
@@ -152,14 +151,14 @@ class Utils {
         }
     }
 
-    /** Write OBJ to FILE. */
+    /* Write OBJ to FILE. */
     static void writeObject(File file, Serializable obj) {
         writeContents(file, serialize(obj));
     }
 
     /* DIRECTORIES */
 
-    /** Filter out all but plain files. */
+    /* Filter out all but plain files. */
     private static final FilenameFilter PLAIN_FILES =
         new FilenameFilter() {
             @Override
@@ -168,7 +167,7 @@ class Utils {
             }
         };
 
-    /** Returns a list of the names of all plain files in the directory DIR, in
+    /*  Returns a list of the names of all plain files in the directory DIR, in
      *  lexicographic order as Java Strings.  Returns null if DIR does
      *  not denote a directory. */
     static List<String> plainFilenamesIn(File dir) {
@@ -181,7 +180,7 @@ class Utils {
         }
     }
 
-    /** Returns a list of the names of all plain files in the directory DIR, in
+    /*  Returns a list of the names of all plain files in the directory DIR, in
      *  lexicographic order as Java Strings.  Returns null if DIR does
      *  not denote a directory. */
     static List<String> plainFilenamesIn(String dir) {
@@ -190,24 +189,23 @@ class Utils {
 
     /* OTHER FILE UTILITIES */
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+    /*  Return the concatentation of FIRST and OTHERS into a File designator,
+     *  analogous to the {@link java.nio.file.Paths//#get(String, String[])}
      *  method. */
     static File join(String first, String... others) {
         return Paths.get(first, others).toFile();
     }
 
-    /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+    /*  Return the concatentation of FIRST and OTHERS into a File designator,
+     *  analogous to the {@link java.nio.file.Paths//#get(String, String[])}
      *  method. */
     static File join(File first, String... others) {
         return Paths.get(first.getPath(), others).toFile();
     }
 
-
     /* SERIALIZATION UTILITIES */
 
-    /** Returns a byte array containing the serialized contents of OBJ. */
+    /* Returns a byte array containing the serialized contents of OBJ. */
     static byte[] serialize(Serializable obj) {
         try {
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -220,17 +218,15 @@ class Utils {
         }
     }
 
-
-
     /* MESSAGES AND ERROR REPORTING */
 
-    /** Return a GitletException whose message is composed from MSG and ARGS as
+    /*  Return a GitletException whose message is composed from MSG and ARGS as
      *  for the String.format method. */
     static GitletException error(String msg, Object... args) {
         return new GitletException(String.format(msg, args));
     }
 
-    /** Print a message composed from MSG and ARGS as for the String.format
+    /*  Print a message composed from MSG and ARGS as for the String.format
      *  method, followed by a newline. */
     static void message(String msg, Object... args) {
         System.out.printf(msg, args);
