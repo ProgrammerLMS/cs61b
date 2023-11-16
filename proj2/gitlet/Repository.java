@@ -332,6 +332,7 @@ public class Repository {
                     String content = getFileContentFromBlob(commitedFIles.get(filename));
                     /* if this file exists, we overwrite. Otherwise, there will be new file */
                     Utils.writeContents(file, content);
+                    return;
                 }
             }
             exitRepository("File does not exist in that commit.");
