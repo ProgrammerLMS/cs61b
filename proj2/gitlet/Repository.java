@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,11 @@ public class Repository {
         } else currentBranchName = "master";
     }
 
+    public static void switchToNewBranch(String newBranchName) {
+        currentBranchName = newBranchName;
+        writeCurrentLocalBranchIntoHead();
+    }
+
     /* check directory exsit */
     public static boolean checkRepositoryExist() {
         return GITLET_DIR.exists() && OBJECT_DIR.exists()
@@ -160,11 +166,15 @@ public class Repository {
         return blobId;
     }
 
+    public static String getCurrentLocalBranchHeadId() {
+        File file = Utils.join(LOCAL_BRANCH_DIR, currentBranchName);
+        if(file.exists()) {
+            return Utils.readContentsAsString(file);
+        } else return "";
+    }
+
     public static Commit getCurrentLocalBranchHeadFromHEAD() {
-        String currentLocalBranchInfo = Utils.readContentsAsString(HEAD_FILE);
-        String currentLocalBranchName = currentLocalBranchInfo.split(" ")[1].split("/")[2];
-        File localBranchFile = Utils.join(LOCAL_BRANCH_DIR, currentLocalBranchName);
-        String commitId = Utils.readContentsAsString(localBranchFile);
+        String commitId = getCurrentLocalBranchHeadId();
         File commitFile = Utils.join(COMMIT_DIR, commitId);
         if(commitFile.exists()) {
             return Utils.readObject(commitFile, Commit.class);
@@ -195,13 +205,6 @@ public class Repository {
             }
         }
         Utils.writeObject(STAGE_FILE, stage);
-    }
-
-    public static String getCurrentLocalBranchHeadId() {
-        File file = Utils.join(LOCAL_BRANCH_DIR, currentBranchName);
-        if(file.exists()) {
-            return Utils.readContentsAsString(file);
-        } else return "";
     }
 
     public static void clearStageAndCommit(String message, Date date) {
@@ -243,7 +246,6 @@ public class Repository {
         } while(!commitId.equals(""));
     }
 
-    //TODO: merge
     private static void showSingleCommitLogInfo(String commitId, Commit commit) {
         StringBuilder sb = new StringBuilder();
         sb.append("===\n");
@@ -315,18 +317,96 @@ public class Repository {
         System.out.println("=== Untracked Files ===");
     }
 
-    /* If a working file is untracked in the current branch and would be overwritten by the checkout
-       print There is an untracked file in the way; delete it, or add and commit it first. and exit;
-       perform this check before doing anything else. Do not change the CWD. */
-    public static void checkToNewBranch(String newBranchName) {
-        if(newBranchName.equals(currentBranchName)) {
+
+    /* Real git does not clear the staging area and stages the file that is checked out.
+       Also, it won’t do a checkout that would overwrite or undo changes
+       sucn as additions or removals that you have staged.*/
+    public static void checkoutFileToCurrentCommit(String fileName) {
+        /* but here, we immediately overwrite the file */
+        File file = Utils.join(CWD, fileName);
+        Commit latestCommit = getCurrentLocalBranchHeadFromHEAD();
+        if(latestCommit != null) {
+            Map<String, String> commitedFIles = latestCommit.getCommitFiles();
+            for(String filename : commitedFIles.keySet()) {
+                if(filename.equals(fileName)) {
+                    String content = getFileContentFromBlob(commitedFIles.get(filename));
+                    /* if this file exists, we overwrite. Otherwise, there will be new file */
+                    Utils.writeContents(file, content);
+                }
+            }
+            exitRepository("File does not exist in that commit.");
+        }
+    }
+
+    /* in real git, it won’t do a checkout that would overwrite or undo changes
+       sucn as additions or removals that you have staged.*/
+    public static void checkoutFileToGivenCommit(String fileName, String commitId) {
+        File file = Utils.join(CWD, fileName);
+        File commitFile = Utils.join(COMMIT_DIR, commitId);
+        if(!commitFile.exists()) {
+            exitRepository("No commit with that id exists.");
+        }
+        Commit commit = Utils.readObject(commitFile, Commit.class);
+        if(commit != null) {
+            Map<String, String> commitedFiles = commit.getCommitFiles();
+            for(String filename : commitedFiles.keySet()) {
+                if(filename.equals(fileName)) {
+                    String content = getFileContentFromBlob(commitedFiles.get(filename));
+                    /* if this file exists, we overwrite. Otherwise, there will be new file */
+                    Utils.writeContents(file, content);
+                }
+            }
+            exitRepository("File does not exist in that commit.");
+        }
+    }
+
+    /* Takes all files in the commit at the head of the given branch,
+       and puts them in the working directory, overwriting the versions of the files that are already there if they exist.
+       Also, at the end of this command, the given branch will now be considered the current branch.
+       Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
+       The staging area is cleared, unless the checked-out branch is the current branch*/
+    public static void checkoutToGivenBranch(String givenBranchName) {
+        if(givenBranchName.equals(currentBranchName)) {
             exitRepository("No need to checkout the current branch.");
         }
-        File newBranchFile = Utils.join(LOCAL_BRANCH_DIR, newBranchName);
-        if(!newBranchFile.exists()) {
+        File givenBranchFile = Utils.join(LOCAL_BRANCH_DIR, givenBranchName);
+        if(!givenBranchFile.exists()) {
             exitRepository("No such branch exists.");
         }
-
+        // actually this is cached character
+        String currentBranch = currentBranchName;
+        Commit currentCommit = getCurrentLocalBranchHeadFromHEAD();
+        // check out to new branch
+        switchToNewBranch(givenBranchName);
+        Commit givenBranchCommit = getCurrentLocalBranchHeadFromHEAD();
+        if(currentCommit != null && givenBranchCommit != null) {
+            Map<String, String> currentCommitedFiles = currentCommit.getCommitFiles();
+            Map<String, String> givenCommitedFiles = givenBranchCommit.getCommitFiles();
+            for(String givenCommitFilename : givenCommitedFiles.keySet()) {
+                /* If a working file is untracked in the current branch and would be overwritten by the checkout,
+                   print the info below, and exit; */
+                if(!currentCommitedFiles.containsKey(givenCommitFilename)) {
+                    // remember to switch back
+                    switchToNewBranch(currentBranch);
+                    exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
+                }
+            }
+            File file;
+            for(String givenCommitFilename : givenCommitedFiles.keySet()) {
+                file = Utils.join(CWD, givenCommitFilename);
+                String content = getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
+                Utils.writeContents(file, content);
+                currentCommitedFiles.remove(givenCommitFilename);
+            }
+            // delete all un-presented files
+            for(String unPresentFile : currentCommitedFiles.keySet()) {
+                file = Utils.join(CWD, unPresentFile);
+                Utils.restrictedDelete(file);
+            }
+            // clear the stage
+            Stage stage = new Stage();
+            Utils.writeObject(STAGE_FILE, stage);
+        }
     }
 
     /* Creates a new branch with the given name,

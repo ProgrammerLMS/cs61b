@@ -82,7 +82,6 @@ public class Main {
                        In regular Git, this is what you get with git log --first-parent.
                        This set of commit nodes is called the commit’s history. */
                     Repository.initBranch();
-                    // TODO: not finish since merge
                     Repository.showLogInfo();
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
@@ -113,7 +112,7 @@ public class Main {
                 if(Repository.checkRepositoryExist()) {
                     Repository.initBranch();
                     if(args.length == 2) { // checkout [branch name]
-                        /* Only checkout of a full branch modifies the staging area
+                        /* In our proj, only checkout of a full branch modifies the staging area
                            otherwise files scheduled for addition or removal remain so. */
                         String branchName = args[1];
 
@@ -123,7 +122,7 @@ public class Main {
                            overwriting the version of the file that’s already there if there is one.
                            The new version of the file is not staged. */
                         String fileName = args[2];
-
+                        Repository.checkoutFileToCurrentCommit(fileName);
                     } else if(args.length == 4) { // checkout [commit id] -- [file name]
                         /* Takes the version of the file as it exists in the commit with the given id,
                            and puts it in the working directory,
@@ -131,7 +130,7 @@ public class Main {
                            The new version of the file is not staged. */
                         String commitId = args[1];
                         String fileName = args[3];
-
+                        Repository.checkoutFileToGivenCommit(fileName, commitId);
                     } else Repository.exitRepository("Incorrect operands.");
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
