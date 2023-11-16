@@ -115,7 +115,7 @@ public class Main {
                         /* In our proj, only checkout of a full branch modifies the staging area
                            otherwise files scheduled for addition or removal remain so. */
                         String branchName = args[1];
-
+                        Repository.checkoutToGivenBranch(branchName);
                     } else if(args.length == 3) { // checkout -- [file name]
                         /* Takes the version of the file as it exists in the head commit
                            and puts it in the working directory,
