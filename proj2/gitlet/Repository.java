@@ -227,6 +227,34 @@ public class Repository {
         writeCommitIntoObjects(commitId, commit);
     }
 
+    /* If the file is neither staged nor tracked by the head commit. do not remove */
+    public static void removeFileFromStageAndCWD(String fileName) {
+        Stage stage = Utils.readObject(STAGE_FILE, Stage.class);
+        File file = Utils.join(CWD, fileName);
+        Commit commit = getCurrentLocalBranchHeadFromHEAD();
+        if(stage != null && commit != null) {
+            String content = Utils.readContentsAsString(file);
+            Map<String, String> addedFiles = stage.getAddedFiles();
+            Map<String, String> commitedFiles = commit.getCommitFiles();
+            if(!addedFiles.containsKey(fileName) && !commitedFiles.containsKey(fileName)) {
+                exitRepository("No reason to remove the file.");
+            }
+            if(addedFiles.containsKey(fileName)) {
+                addedFiles.remove(fileName);
+            }
+            /* do not remove it unless it is tracked in the current commit */
+            if(commitedFiles.containsKey(fileName)) {
+                String obj = fileName + content;
+                String blobId = Utils.sha1(obj);
+                stage.addFileToStage(fileName, blobId);
+                Utils.writeObject(STAGE_FILE, stage);
+                if(file.exists()) {
+                    Utils.restrictedDelete(file);
+                }
+            }
+        }
+    }
+
     public static String getFileContentFromBlob(String blobId) {
         File file = Utils.join(BLOB_DIR, blobId);
         Blob blob = Utils.readObject(file, Blob.class);
@@ -326,10 +354,10 @@ public class Repository {
         File file = Utils.join(CWD, fileName);
         Commit latestCommit = getCurrentLocalBranchHeadFromHEAD();
         if(latestCommit != null) {
-            Map<String, String> commitedFIles = latestCommit.getCommitFiles();
-            for(String filename : commitedFIles.keySet()) {
+            Map<String, String> commitedFiles = latestCommit.getCommitFiles();
+            for(String filename : commitedFiles.keySet()) {
                 if(filename.equals(fileName)) {
-                    String content = getFileContentFromBlob(commitedFIles.get(filename));
+                    String content = getFileContentFromBlob(commitedFiles.get(filename));
                     /* if this file exists, we overwrite. Otherwise, there will be new file */
                     Utils.writeContents(file, content);
                     return;
@@ -423,6 +451,17 @@ public class Repository {
         }
         String commitId = getCurrentLocalBranchHeadId();
         Utils.writeContents(file, commitId);
+    }
+
+    public static void deleteGivenBranch(String branchName) {
+        if(branchName.equals(currentBranchName)) {
+            exitRepository("Cannot remove the current branch.");
+        }
+        File file = Utils.join(LOCAL_BRANCH_DIR, branchName);
+        if(!file.exists()) {
+            exitRepository("A branch with that name does not exist.");
+        }
+        Utils.restrictedDelete(file);
     }
 
     public static void exitRepository(String message) {

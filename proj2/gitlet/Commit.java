@@ -33,8 +33,7 @@ public class Commit implements Serializable {
     private String secondParentCommitId;
 
     /* <fileName, blobId> */
-    // TODO where this from? stage?
-    private Map<String, String> commitFiles;
+    private final Map<String, String> commitFiles;
 
     public Commit(String message, Date timestamp, String parentCommitId) {
         this.message = message;

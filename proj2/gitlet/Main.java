@@ -67,9 +67,9 @@ public class Main {
                        if the user has not already done so
                        remember do not remove it unless it is tracked in the current commit */
                     Repository.initBranch();
-
-                    /* If the file is neither staged nor tracked by the head commit. do not remove */
-
+                    String fileName = args[1];
+                    // TODO right?
+                    Repository.removeFileFromStageAndCWD(fileName);
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "log":
@@ -137,12 +137,21 @@ public class Main {
             case "branch":
                 validateNumArgs(args, 2);
                 String newBranchName = args[1];
-                Repository.initBranch();
-                Repository.createNewBranch(newBranchName);
+                if(Repository.checkRepositoryExist()) {
+                    Repository.initBranch();
+                    Repository.createNewBranch(newBranchName);
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "rm-branch":
                 validateNumArgs(args, 2);
-
+                String branchName = args[1];
+                if(Repository.checkRepositoryExist()) {
+                    /* Deletes the branch with the given name.
+                   This only means to delete the pointer associated with the branch;
+                   it does not mean to delete all commits that were created under the branch. */
+                    Repository.initBranch();
+                    Repository.deleteGivenBranch(branchName);
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "reset":
                 validateNumArgs(args, 2);
