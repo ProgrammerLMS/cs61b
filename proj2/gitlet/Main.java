@@ -116,7 +116,6 @@ public class Main {
                 validateNumArgs(args, 1);
                 if(Repository.checkRepositoryExist()) {
                     Repository.initBranch();
-                    // TODO NO finished
                     Repository.showStatusInfo();
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
@@ -143,6 +142,9 @@ public class Main {
                            and puts it in the working directory,
                            overwriting the version of the file that’s already there if there is one.
                            The new version of the file is not staged. */
+                        if(!args[2].equals("--")) {
+                            Repository.exitRepository("Incorrect operands.");
+                        }
                         String commitId = args[1];
                         String fileName = args[3];
                         Repository.checkoutFileToGivenCommit(fileName, commitId);

@@ -361,18 +361,37 @@ public class Repository {
     public static void showStatusInfo() {
         /* branch */
         System.out.println("=== Branches ===");
+        List<String> branchNames = Utils.plainFilenamesIn(LOCAL_BRANCH_DIR);
+        for(String branchName : branchNames) {
+            if(branchName.equals(currentBranchName)) {
+                System.out.println("*" + branchName);
+            } else {
+                System.out.println(branchName);
+            }
+        }
         System.out.println();
         /* stage */
         System.out.println("=== Staged Files ===");
+        Stage stage;
+        if(STAGE_FILE.exists()) {
+            stage = Utils.readObject(STAGE_FILE, Stage.class);
+        } else stage = new Stage();
+        for(String addedFile : stage.getAddedFiles().keySet()) {
+            System.out.println(addedFile);
+        }
         System.out.println();
         /* remove */
         System.out.println("=== Removed Files ===");
+        for(String removedFile : stage.getRemovedFiles()) {
+            System.out.println(removedFile);
+        }
         System.out.println();
         /* not stage */
         System.out.println("=== Modifications Not Staged For Commit ===");
         System.out.println();
         /* untracked */
         System.out.println("=== Untracked Files ===");
+        System.out.println();
     }
 
 
@@ -475,7 +494,7 @@ public class Repository {
        This command does NOT immediately switch to the newly created branch
        Before you ever call branch, your code should be running with a default branch called master */
     public static void createNewBranch(String newBranchName) {
-        File file = Utils.join(BRANCH_DIR, newBranchName);
+        File file = Utils.join(LOCAL_BRANCH_DIR, newBranchName);
         if(file.exists()) {
             exitRepository("A branch with that name already exists.");
         }
