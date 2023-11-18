@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import static gitlet.Utils.*;
-
 /*  Represents a gitlet repository.
  *  The repository also maintains a mapping from branch heads to reference of commits
  *  so that certain important commits have symbolic names.
@@ -28,7 +26,7 @@ public class Repository {
     public static final File CWD = new File(System.getProperty("user.dir"));
 
     /* The .gitlet directory. */
-    public static final File GITLET_DIR = join(CWD, ".gitlet");
+    public static final File GITLET_DIR = Utils.join(CWD, ".gitlet");
 
     /* Blob and Commit data directory */
     public static final File OBJECT_DIR = Utils.join(GITLET_DIR, "objects");
@@ -88,7 +86,7 @@ public class Repository {
         Commit commit = new Commit(initMessage, initDate, "");
         writeCommitIntoObjects(commitId, commit);
         // local"master" branch head and HEAD file both point at the init commit
-        writeCurrentCommitIdIntoLocalBranch(commitId);
+        writeCurrentCommitIdIntoCurrentLocalBranch(commitId);
         // write branchInfo into HEAD
         writeCurrentLocalBranchIntoHead();
     }
@@ -122,7 +120,7 @@ public class Repository {
     }
 
     /* write current commitId into refs/heads/branchName */
-    public static void writeCurrentCommitIdIntoLocalBranch(String commitId) {
+    public static void writeCurrentCommitIdIntoCurrentLocalBranch(String commitId) {
         File file = Utils.join(LOCAL_BRANCH_DIR, currentBranchName);
         if(!file.exists()) {
             try {
@@ -173,7 +171,7 @@ public class Repository {
         } else return "";
     }
 
-    public static Commit getCurrentLocalBranchHeadFromHEAD() {
+    public static Commit getCurrentLocalBranchHead() {
         String commitId = getCurrentLocalBranchHeadId();
         File commitFile = Utils.join(COMMIT_DIR, commitId);
         if(commitFile.exists()) {
@@ -182,7 +180,6 @@ public class Repository {
     }
 
     /* Staging an already-staged file overwrites the previous entry in the staging area with the new contents.
-       The staging area should be somewhere in .gitlet.
        If the current working version of the file is identical to the version in the current commit,
        do not stage it to be added, and remove it from the staging area if it is already there.
        as can happen when a file is changed, added, and then changed back to it’s original version.
@@ -194,64 +191,91 @@ public class Repository {
         } else stage = new Stage();
         stage.addFileToStage(fileName, blobId);
         // check this file version in current branch
-        Commit currentCommit = getCurrentLocalBranchHeadFromHEAD();
+        Commit currentCommit = getCurrentLocalBranchHead();
         if(currentCommit != null) {
             Map<String, String> commitFiles = currentCommit.getCommitFiles();
             for(String filename : commitFiles.keySet()) {
                 if(filename.equals(fileName) && commitFiles.get(filename).equals(blobId)) {
-                    // if this unchanged file exist in stage, remove it
-                    stage.removeFileByFileName(fileName);
+                    // if this unchanged file exist in stage, remove it from stage
+                    // not stage it for removal!
+                    stage.removeFileOutOfStage(fileName);
                 }
             }
         }
         Utils.writeObject(STAGE_FILE, stage);
     }
 
+    /* By default a commit has the same file contents as its parent.
+       Files staged for addition and removal are the updates to the commit.
+       remember that the staging area is cleared after a commit. */
+    /* Any changes made to files after staging for addition or removal are ignored by the commit command */
+    /* ? Each commit is identified by its SHA-1 id,
+       which must include the blob references of its files, parent reference, log message, and commit time. ? */
     public static void clearStageAndCommit(String message, Date date) {
         String obj = message + date.toString();
-        String commitId = Utils.sha1(obj);
+        String newCommitId = Utils.sha1(obj);
         // how we get the last commitId? -> current branch head point at it
-        String currentLocalBranchHeadId = getCurrentLocalBranchHeadId();
-        Commit commit = new Commit(message, date, currentLocalBranchHeadId);
-        Stage stage = Utils.readObject(STAGE_FILE, Stage.class);
-        Map<String, String> stagedFiles = stage.getAddedFiles();
-        for(String fileName : stagedFiles.keySet()) {
-            commit.addCommitFile(fileName, stagedFiles.get(fileName));
+        String currentCommitId = getCurrentLocalBranchHeadId();
+        Commit currentCommit = getCurrentLocalBranchHead();
+        Commit newCommit = new Commit(message, date, currentCommitId);
+        /* default commit is same as it parent commit */
+        if(currentCommit != null) {
+            newCommit.setCommitFiles(currentCommit.getCommitFiles());
+        }
+        Stage stage;
+        if(STAGE_FILE.exists()) {
+            stage = Utils.readObject(STAGE_FILE, Stage.class);
+        } else stage = new Stage();
+        Map<String, String> addedFiles = stage.getAddedFiles();
+        List<String> removedFiles = stage.getRemovedFiles();
+        if(addedFiles.size() == 0 && removedFiles.size() == 0) {
+            exitRepository("No changes added to the commit.");
+        }
+        for(String fileName : addedFiles.keySet()) {
+            newCommit.addCommitFile(fileName, addedFiles.get(fileName));
+        }
+        /* files tracked in the current commit may be untracked in the new commit
+           as a result being staged for removal */
+        for(String removeFileName : removedFiles) {
+            newCommit.removeCommitFiles(removeFileName);
         }
         // 1.update index
-        stage.clearAddedFiles();
+        stage.clear();
         Utils.writeObject(STAGE_FILE, stage);
         // 2.update refs/heads
-        writeCurrentCommitIdIntoLocalBranch(commitId);
+        writeCurrentCommitIdIntoCurrentLocalBranch(newCommitId);
         // 3.write commit into object
-        writeCommitIntoObjects(commitId, commit);
+        writeCommitIntoObjects(newCommitId, newCommit);
     }
 
     /* If the file is neither staged nor tracked by the head commit. do not remove */
+    /* The rm command will remove such files, as well as staging them for removal
+       so that they will be untracked after a commit. */
+    // TODO
     public static void removeFileFromStageAndCWD(String fileName) {
-        Stage stage = Utils.readObject(STAGE_FILE, Stage.class);
+        Stage stage;
+        if(STAGE_FILE.exists()) {
+            stage = Utils.readObject(STAGE_FILE, Stage.class);
+        } else stage = new Stage();
         File file = Utils.join(CWD, fileName);
-        Commit commit = getCurrentLocalBranchHeadFromHEAD();
-        if(stage != null && commit != null) {
-            String content = Utils.readContentsAsString(file);
+        Commit commit = getCurrentLocalBranchHead();
+        if(commit != null) {
             Map<String, String> addedFiles = stage.getAddedFiles();
             Map<String, String> commitedFiles = commit.getCommitFiles();
             if(!addedFiles.containsKey(fileName) && !commitedFiles.containsKey(fileName)) {
                 exitRepository("No reason to remove the file.");
             }
             if(addedFiles.containsKey(fileName)) {
-                addedFiles.remove(fileName);
+                stage.removeFileOutOfStage(fileName);
             }
             /* do not remove it unless it is tracked in the current commit */
             if(commitedFiles.containsKey(fileName)) {
-                String obj = fileName + content;
-                String blobId = Utils.sha1(obj);
-                stage.addFileToStage(fileName, blobId);
-                Utils.writeObject(STAGE_FILE, stage);
+                stage.removeFileForRemoval(fileName);
                 if(file.exists()) {
                     Utils.restrictedDelete(file);
                 }
             }
+            Utils.writeObject(STAGE_FILE, stage);
         }
     }
 
@@ -313,6 +337,7 @@ public class Repository {
        Similar effects can be achieved by grepping the output of log. */
     public static void findAllCommitByMessage(String message) {
         List<String> commitFiles = Utils.plainFilenamesIn(COMMIT_DIR);
+        List<String> namesList = new ArrayList<>();
         if(commitFiles != null) {
             File file;
             Commit commit;
@@ -320,11 +345,16 @@ public class Repository {
                 file = Utils.join(COMMIT_DIR, commitFileName);
                 commit = Utils.readObject(file, Commit.class);
                 if(commit.getMessage().equals(message)) {
-                    System.out.println(commitFileName);
+                    namesList.add(commitFileName);
                 }
             }
+            if(namesList.size() == 0) {
+                exitRepository("Found no commit with that message.");
+            }
+            for(String name : namesList) {
+                System.out.println(name);
+            }
         }
-        System.out.println();
     }
 
     //TODO not finish yet
@@ -352,7 +382,7 @@ public class Repository {
     public static void checkoutFileToCurrentCommit(String fileName) {
         /* but here, we immediately overwrite the file */
         File file = Utils.join(CWD, fileName);
-        Commit latestCommit = getCurrentLocalBranchHeadFromHEAD();
+        Commit latestCommit = getCurrentLocalBranchHead();
         if(latestCommit != null) {
             Map<String, String> commitedFiles = latestCommit.getCommitFiles();
             for(String filename : commitedFiles.keySet()) {
@@ -405,10 +435,10 @@ public class Repository {
         }
         // actually this is cached character
         String currentBranch = currentBranchName;
-        Commit currentCommit = getCurrentLocalBranchHeadFromHEAD();
+        Commit currentCommit = getCurrentLocalBranchHead();
         // check out to new branch
         switchToNewBranch(givenBranchName);
-        Commit givenBranchCommit = getCurrentLocalBranchHeadFromHEAD();
+        Commit givenBranchCommit = getCurrentLocalBranchHead();
         if(currentCommit != null && givenBranchCommit != null) {
             Map<String, String> currentCommitedFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitedFiles = givenBranchCommit.getCommitFiles();

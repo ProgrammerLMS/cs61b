@@ -33,7 +33,7 @@ public class Commit implements Serializable {
     private String secondParentCommitId;
 
     /* <fileName, blobId> */
-    private final Map<String, String> commitFiles;
+    private Map<String, String> commitFiles;
 
     public Commit(String message, Date timestamp, String parentCommitId) {
         this.message = message;
@@ -79,7 +79,15 @@ public class Commit implements Serializable {
         return commitFiles;
     }
 
+    public void setCommitFiles(Map<String, String> commitFiles) {
+        this.commitFiles = commitFiles;
+    }
+
     public void addCommitFile(String fileName, String blobId) {
         this.commitFiles.put(fileName, blobId);
+    }
+
+    public void removeCommitFiles(String fileName) {
+        this.commitFiles.remove(fileName);
     }
 }

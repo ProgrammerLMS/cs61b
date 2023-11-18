@@ -50,11 +50,23 @@ public class Main {
             case "commit":
                 validateNumArgs(args, 2); // commit [message]
                 if(Repository.checkRepositoryExist()) {
-                    /* after we commit, the file data in stage area is gone!
-                       HEAD and branch head will both move to the latest commit */
+                    /* creating a new commit saves a snapshot of tracked files in the current commit and staging area
+                      so they can be restored at a later time.
+                      The commit is said to be tracking the saved files.
+                      By default, each commit’s snapshot of files will be exactly the same as its parent commit’s snapshot
+                      of files;  it will keep versions of files exactly as they are, and not update them.
+                      A commit will only update the contents of files it is tracking that have been staged for addition
+                      at the time of commit, in which case the commit will now include the version of the file that was staged
+                      instead of the version it got from its parent.
+                      A commit will save and start tracking any files that were staged for addition but weren’t tracked by its parent.
+                      Finally, files tracked in the current commit may be untracked in the new commit as a result being staged for removal
+                      by the rm command . */
                     Repository.initBranch();
                     Date date = new Date();
                     String message = args[1];
+                    if(message.length() == 0) {
+                        Repository.exitRepository("Please enter a commit message.");
+                    }
                     Repository.clearStageAndCommit(message, date);
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
@@ -121,6 +133,9 @@ public class Main {
                            and puts it in the working directory,
                            overwriting the version of the file that’s already there if there is one.
                            The new version of the file is not staged. */
+                        if(!args[1].equals("--")) {
+                            Repository.exitRepository("Incorrect operands.");
+                        }
                         String fileName = args[2];
                         Repository.checkoutFileToCurrentCommit(fileName);
                     } else if(args.length == 4) { // checkout [commit id] -- [file name]
