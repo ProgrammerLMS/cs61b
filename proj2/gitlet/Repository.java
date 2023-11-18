@@ -184,25 +184,38 @@ public class Repository {
        do not stage it to be added, and remove it from the staging area if it is already there.
        as can happen when a file is changed, added, and then changed back to it’s original version.
        The file will no longer be staged for removal, see git rm, if it was at the time of the command. */
-    public static void addFileToStage(String fileName, String blobId) {
+    public static void addFileToStage(String fileName) {
+        File file = Utils.join(CWD, fileName);
+        String content, blobId;
         Stage stage;
         if(STAGE_FILE.exists()) {
             stage = Utils.readObject(STAGE_FILE, Stage.class);
         } else stage = new Stage();
-        stage.addFileToStage(fileName, blobId);
-        // check this file version in current branch
-        Commit currentCommit = getCurrentLocalBranchHead();
-        if(currentCommit != null) {
-            Map<String, String> commitFiles = currentCommit.getCommitFiles();
-            for(String filename : commitFiles.keySet()) {
-                if(filename.equals(fileName) && commitFiles.get(filename).equals(blobId)) {
-                    // if this unchanged file exist in stage, remove it from stage
-                    // not stage it for removal!
-                    stage.removeFileOutOfStage(fileName);
+        if(file.exists()) {
+            content = Utils.readContentsAsString(file);
+            blobId = Repository.checkBlobExist(file.getName(), content);
+            /* read blob data and check file content;
+             * if the content change, add it to the stage area */
+            if(blobId.equals("")) {
+                blobId = Repository.writeBlobIntoObjects(file.getName(), content);
+            }
+            if(stage.getRemovedFiles().contains(fileName)) {
+                stage.removeFileOutOfRemoval(fileName);
+            } else stage.addFileToStage(fileName, blobId);
+            // check this file version in current branch
+            Commit currentCommit = getCurrentLocalBranchHead();
+            if(currentCommit != null) {
+                Map<String, String> commitFiles = currentCommit.getCommitFiles();
+                for(String filename : commitFiles.keySet()) {
+                    if(filename.equals(fileName) && commitFiles.get(filename).equals(blobId)) {
+                        // if this unchanged file exist in stage, remove it from stage
+                        // not stage it for removal!
+                        stage.removeFileOutOfStage(fileName);
+                    }
                 }
             }
-        }
-        Utils.writeObject(STAGE_FILE, stage);
+            Utils.writeObject(STAGE_FILE, stage);
+        } else Repository.exitRepository("File does not exist.");
     }
 
     /* By default a commit has the same file contents as its parent.
@@ -461,6 +474,7 @@ public class Repository {
         if(currentCommit != null && givenBranchCommit != null) {
             Map<String, String> currentCommitedFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitedFiles = givenBranchCommit.getCommitFiles();
+
             for(String givenCommitFilename : givenCommitedFiles.keySet()) {
                 /* If a working file is untracked in the current branch and would be overwritten by the checkout,
                    print the info below, and exit; */

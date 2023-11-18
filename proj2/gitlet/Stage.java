@@ -47,4 +47,8 @@ public class Stage implements Serializable {
     public void removeFileForRemoval(String filename) {
         removedFiles.add(filename);
     }
+
+    public void removeFileOutOfRemoval(String fileName) {
+        removedFiles.remove(fileName);
+    }
 }

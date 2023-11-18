@@ -33,18 +33,8 @@ public class Main {
                        add the file content(at the moment when you call "add") to the blob
                        notice that file which not change will not be added to stage */
                     Repository.initBranch();
-                    // working directory file
-                    File file = Utils.join(Repository.CWD, args[1]);
-                    if(file.exists()) {
-                        String content = Utils.readContentsAsString(file);
-                        String blobId = Repository.checkBlobExist(file.getName(), content);
-                        /* read blob data and check file content;
-                         * if the content change, add it to the stage area */
-                        if(blobId.equals("")) {
-                            blobId = Repository.writeBlobIntoObjects(file.getName(), content);
-                        }
-                        Repository.addFileToStage(file.getName(), blobId);
-                    } else Repository.exitRepository("File does not exist.");
+                    String filename = args[1];
+                    Repository.addFileToStage(filename);
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "commit":
