@@ -161,8 +161,17 @@ public class Main {
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "reset":
-                validateNumArgs(args, 2);
-
+                validateNumArgs(args, 2);  // reset [commit id]
+                /* Checks out all the files tracked by the given commit.
+                   Removes tracked files that are not present in that commit.
+                   Also moves the current branch’s head to that commit node.
+                   The staging area is cleared.
+                   The command is essentially checkout of an arbitrary commit that also changes the current branch head. */
+                if(Repository.checkRepositoryExist()) {
+                    Repository.initBranch();
+                    String commitId = args[1];
+                    Repository.resetHard(commitId);
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "merge": // in gitlet, we only support two branches merge
                 validateNumArgs(args, 2);

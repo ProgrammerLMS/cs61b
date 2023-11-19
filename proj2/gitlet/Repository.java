@@ -466,7 +466,7 @@ public class Repository {
             exitRepository("No such branch exists.");
         }
         // actually this is cached character
-        String currentBranch = currentBranchName;
+        String preBranch = currentBranchName;
         Commit currentCommit = getCurrentLocalBranchHead();
         // check out to new branch
         switchToNewBranch(givenBranchName);
@@ -474,14 +474,21 @@ public class Repository {
         if(currentCommit != null && givenBranchCommit != null) {
             Map<String, String> currentCommitedFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitedFiles = givenBranchCommit.getCommitFiles();
-
             for(String givenCommitFilename : givenCommitedFiles.keySet()) {
                 /* If a working file is untracked in the current branch and would be overwritten by the checkout,
                    print the info below, and exit; */
                 if(!currentCommitedFiles.containsKey(givenCommitFilename)) {
-                    // remember to switch back
-                    switchToNewBranch(currentBranch);
-                    exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
+                    // check the content
+                    File file = Utils.join(CWD, givenCommitFilename);
+                    if(file.exists()) {
+                        String currentContent = Utils.readContentsAsString(file);
+                        String oldContent = getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
+                        if(!currentContent.equals(oldContent)) {
+                            // remember to switch back
+                            switchToNewBranch(preBranch);
+                            exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
+                        }
+                    }
                 }
             }
             File file;
@@ -525,6 +532,54 @@ public class Repository {
             exitRepository("A branch with that name does not exist.");
         }
         Utils.restrictedDelete(file);
+    }
+
+    /* in real git, this is reset [id] -- hard */
+    public static void resetHard(String commitId) {
+        File file = Utils.join(COMMIT_DIR, commitId);
+        if(!file.exists()) {
+            exitRepository("No commit with that id exists.");
+        }
+        Commit givenCommit = Utils.readObject(file, Commit.class);
+        Commit currentCommit = getCurrentLocalBranchHead();
+        if(currentCommit != null) {
+            File unpresentFile, presentFile, untrackedFile;
+            Map<String, String> currentCommitFiles = currentCommit.getCommitFiles();
+            Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
+            for(String givenFile : givenCommitFiles.keySet()) {
+                if(!currentCommitFiles.containsKey(givenFile)) {
+                    untrackedFile = Utils.join(CWD, givenFile);
+                    if(untrackedFile.exists()) {
+                        String newContent = Utils.readContentsAsString(untrackedFile);
+                        String oldContent = getFileContentFromBlob(givenCommitFiles.get(givenFile));
+                        if(!newContent.equals(oldContent)) {
+                            exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
+                        }
+                    }
+                }
+            }
+            for(String currentFile : currentCommitFiles.keySet()) {
+                if(!givenCommitFiles.containsKey(currentFile)) {
+                    unpresentFile = Utils.join(CWD, currentFile);
+                    if(unpresentFile.exists()) {
+                        Utils.restrictedDelete(unpresentFile);
+                    }
+                } else {
+                    presentFile = Utils.join(CWD, currentFile);
+                    String newContent = getFileContentFromBlob(givenCommitFiles.get(currentFile));
+                    Utils.writeContents(presentFile, newContent);
+                }
+            }
+            // move the current branch’s head to that commit node
+            writeCurrentCommitIdIntoCurrentLocalBranch(commitId);
+            // clear stage
+            Stage stage;
+            if(STAGE_FILE.exists()) {
+                stage = Utils.readObject(STAGE_FILE, Stage.class);
+            } else stage = new Stage();
+            stage.clear();
+            Utils.writeObject(STAGE_FILE, stage);
+        }
     }
 
     public static void exitRepository(String message) {
