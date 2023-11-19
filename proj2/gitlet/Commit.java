@@ -9,14 +9,17 @@ import java.util.*;
  *  so there will be one flat directory of plain files for each repository
  *
  *  About Merge:
- *  A commit, therefore, will consist of a log message, timestamp, a mapping of file names to blob references,
+ *  A commit, therefore, will consist of a log message,
+ *  timestamp, a mapping of file names to blob references,
  *  a parent reference, and (for merges) a second parent reference.
  *
  *  About hash
  *  In particular, this involves Including all metadata and references when hashing a commit.
  *  Distinguishing somehow between hashes for commits and hashes for blobs.
- *  A good way of doing this involves a well-thought out directory structure within the .gitlet directory.
- *  Another way to do so is to hash in an extra word for each object that has one value for blobs and another for commits.
+ *  A good way of doing this involves a well-thought
+ *  out directory structure within the .gitlet directory.
+ *  Another way to do so is to hash in an extra word for each object
+ *  that has one value for blobs and another for commits.
  *  @author LMS
  */
 public class Commit implements Serializable {
