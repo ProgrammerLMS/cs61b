@@ -69,7 +69,6 @@ public class Main {
                        remember do not remove it unless it is tracked in the current commit */
                     Repository.initBranch();
                     String fileName = args[1];
-                    // TODO right?
                     Repository.removeFileFromStageAndCWD(fileName);
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;

@@ -242,9 +242,11 @@ public class Repository {
     /* By default a commit has the same file contents as its parent.
        Files staged for addition and removal are the updates to the commit.
        remember that the staging area is cleared after a commit. */
-    /* Any changes made to files after staging for addition or removal are ignored by the commit command */
+    /* Any changes made to files after staging
+       for addition or removal are ignored by the commit command */
     /* ? Each commit is identified by its SHA-1 id,
-       which must include the blob references of its files, parent reference, log message, and commit time. ? */
+       which must include the blob references of its files,
+       parent reference, log message, and commit time. ? */
     public static void clearStageAndCommit(String message, Date date) {
         String obj = message + date.toString();
         String newCommitId = Utils.sha1(obj);
@@ -287,7 +289,6 @@ public class Repository {
     /* If the file is neither staged nor tracked by the head commit. do not remove */
     /* The rm command will remove such files, as well as staging them for removal
        so that they will be untracked after a commit. */
-    // TODO
     public static void removeFileFromStageAndCWD(String fileName) {
         Stage stage;
         if (STAGE_FILE.exists()) {
@@ -395,7 +396,6 @@ public class Repository {
         }
     }
 
-    //TODO not finish yet
     public static void showStatusInfo() {
         /* branch */
         System.out.println("=== Branches ===");
@@ -480,9 +480,12 @@ public class Repository {
     }
 
     /* Takes all files in the commit at the head of the given branch,
-       and puts them in the working directory, overwriting the versions of the files that are already there if they exist.
-       Also, at the end of this command, the given branch will now be considered the current branch.
-       Any files that are tracked in the current branch but are not present in the checked-out branch are deleted.
+       and puts them in the working directory, overwriting the
+       versions of the files that are already there if they exist.
+       Also, at the end of this command, the given branch will
+       now be considered the current branch.
+       Any files that are tracked in the current branch
+       but are not present in the checked-out branch are deleted.
        The staging area is cleared, unless the checked-out branch is the current branch*/
     public static void checkoutToGivenBranch(String givenBranchName) {
         if (givenBranchName.equals(currentBranchName)) {
@@ -502,18 +505,21 @@ public class Repository {
             Map<String, String> currentCommitedFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitedFiles = givenBranchCommit.getCommitFiles();
             for (String givenCommitFilename : givenCommitedFiles.keySet()) {
-                /* If a working file is untracked in the current branch and would be overwritten by the checkout,
+                /* If a working file is untracked in the current branch
+                   and would be overwritten by the checkout,
                    print the info below, and exit; */
                 if (!currentCommitedFiles.containsKey(givenCommitFilename)) {
                     // check the content
                     File file = Utils.join(CWD, givenCommitFilename);
                     if (file.exists()) {
                         String currentContent = Utils.readContentsAsString(file);
-                        String oldContent = getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
+                        String oldContent =
+                                getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
                         if (!currentContent.equals(oldContent)) {
                             // remember to switch back
                             switchToNewBranch(preBranch);
-                            exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
+                            exitRepository("There is an untracked file in the way; "
+                                    + "delete it, or add and commit it first.");
                         }
                     }
                 }
@@ -521,7 +527,8 @@ public class Repository {
             File file;
             for (String givenCommitFilename : givenCommitedFiles.keySet()) {
                 file = Utils.join(CWD, givenCommitFilename);
-                String content = getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
+                String content =
+                        getFileContentFromBlob(givenCommitedFiles.get(givenCommitFilename));
                 Utils.writeContents(file, content);
                 currentCommitedFiles.remove(givenCommitFilename);
             }
@@ -540,7 +547,8 @@ public class Repository {
        and points it at the current head commit.
        A branch is nothing more than a name for a reference to a commit node.
        This command does NOT immediately switch to the newly created branch
-       Before you ever call branch, your code should be running with a default branch called master */
+       Before you ever call branch,
+       your code should be running with a default branch called master*/
     public static void createNewBranch(String newBranchName) {
         File file = Utils.join(LOCAL_BRANCH_DIR, newBranchName);
         if (file.exists()) {
@@ -558,7 +566,9 @@ public class Repository {
         if (!file.exists()) {
             exitRepository("A branch with that name does not exist.");
         }
-       file.delete();
+        if (!file.isDirectory()) {
+           file.delete();
+        }
     }
 
     /* in real git, this is reset [id] -- hard */
@@ -611,8 +621,8 @@ public class Repository {
                     String newContent = Utils.readContentsAsString(untrackedFile);
                     String oldContent = getFileContentFromBlob(givenCommitFiles.get(givenFile));
                     if (!newContent.equals(oldContent)) {
-                        exitRepository("There is an untracked file in the way; " +
-                                "delete it, or add and commit it first.");
+                        exitRepository("There is an untracked file in the way; "
+                                + "delete it, or add and commit it first.");
                     }
                 }
             }
@@ -625,11 +635,13 @@ public class Repository {
 
        Real Git has a different way to decide which of multiple possible split points to use.
 
-       Real Git will force the user to resolve the merge conflicts before committing to complete the merge.
+       Real Git will force the user to resolve the merge conflicts
+       before committing to complete the merge.
        Gitlet just commits the merge, conflicts and all
        so that you must use a separate commit to resolve problems.
 
-       Real Git will complain if there are unstaged changes to a file that would be changed by a merge.
+       Real Git will complain if there are unstaged changes to
+       a file that would be changed by a merge.
        You may do so as well if you want, but we will not test that case.
      * */
     public static void mergeGivenBranchToCurrent(String givenBranchName) {
@@ -653,7 +665,8 @@ public class Repository {
         String currentBranchHeadId = getCurrentLocalBranchHeadId();
         String givenBranchHeadId = Utils.readContentsAsString(branchFile);
         Commit currentCommit = getCurrentLocalBranchHead();
-        Commit givenCommit = Utils.readObject(Utils.join(COMMIT_DIR, givenBranchHeadId), Commit.class);
+        File givenCommitFile = Utils.join(COMMIT_DIR, givenBranchHeadId);
+        Commit givenCommit = Utils.readObject(givenCommitFile, Commit.class);
         if (currentCommit != null) {
             checkOverwrite(givenCommit, currentCommit);
         }
@@ -671,6 +684,71 @@ public class Repository {
             checkoutToGivenBranch(givenBranchName);
             exitRepository("Current branch fast-forwarded.");
         }
+        File splitPointFile = Utils.join(COMMIT_DIR, splitPointId);
+        Commit splitPoint = Utils.readObject(splitPointFile, Commit.class);
+        if (currentCommit != null) {
+            Map<String, String> currentCommitFiles = currentCommit.getCommitFiles();
+            Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
+            Map<String, String> splitPointFiles = splitPoint.getCommitFiles();
+            for (String currentFileName : currentCommitFiles.keySet()) {
+                /* Any files that have been modified in the given branch
+                   since the split point, but not modified in the current branch
+                   since the split point should be changed to their versions
+                   in the given branch,
+                   checked out from the commit at the front of the given branch.
+                   These files should then all be automatically staged*/
+                if (currentCommitFiles.get(currentFileName).equals(
+                        splitPointFiles.getOrDefault(currentFileName, ""))
+                ) {
+                    if (!givenCommitFiles.getOrDefault(currentFileName, "").equals(
+                        splitPointFiles.getOrDefault(currentFileName, "")
+                    )) {
+                        checkoutFileToGivenCommit(currentFileName, givenBranchHeadId);
+                        addFileToStage(currentFileName);
+                    }
+                }
+                /* Any files that have been modified in both
+                   the current and given branch in the same way,
+                   both files now have the same content or were both removed
+                   are left unchanged by the merge. */
+                if (currentCommitFiles.get(currentFileName).equals(
+                        givenCommitFiles.getOrDefault(currentFileName, "")
+                )) {
+                    continue;
+                }
+                /* If a file was removed from both the current and given branch
+                   but a file of the same name is present in the working directory
+                   it is left alone and continues to be absent,
+                   not tracked nor staged in the merge. */
+                if (!splitPointFiles.containsKey(currentFileName)
+                        && !givenCommitFiles.containsKey(currentFileName)) {
+                    continue;
+                }
+            }
+            for (String givenCommitFileName : givenCommitFiles.keySet()) {
+                if (splitPointFiles.getOrDefault(givenCommitFileName, "").equals(
+                        givenCommitFiles.get(givenCommitFileName)
+                )) {
+                    /* Any files that have been modified in the current branch
+                       but not in the given branch since the split point
+                       should stay as they are. */
+                    if (!currentCommitFiles.getOrDefault(givenCommitFileName, "").equals(
+                         givenCommitFiles.get(givenCommitFileName)
+                    )) {
+                        continue;
+                    }
+                }
+
+                if (!currentCommitFiles.containsKey(givenCommitFileName)
+                        && !splitPointFiles.containsKey(givenCommitFileName)) {
+                    checkoutFileToGivenCommit(givenCommitFileName, givenBranchHeadId);
+                    addFileToStage(givenCommitFileName);
+                }
+            }
+            // update head
+
+            // update stage
+        }
     }
 
     private static String getSplitPoint(String currentBranchHeadId, String givenBranchHeadId) {
@@ -682,7 +760,7 @@ public class Repository {
             currentBranchHeadId = commit.getParentCommitId();
         }
         while (!givenBranchHeadId.equals("")) {
-            if(currenBranchNode.contains(givenBranchHeadId)) {
+            if (currenBranchNode.contains(givenBranchHeadId)) {
                 return givenBranchHeadId;
             }
             File file = Utils.join(COMMIT_DIR, givenBranchHeadId);
