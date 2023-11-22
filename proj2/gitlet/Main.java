@@ -1,6 +1,5 @@
 package gitlet;
 
-import java.io.File;
 import java.util.Date;
 
 /* Driver class for Gitlet, a subset of the Git version-control system.
@@ -174,8 +173,13 @@ public class Main {
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "merge": // in gitlet, we only support two branches merge
-                validateNumArgs(args, 2);
-
+                validateNumArgs(args, 2); // merge [file name]
+                /* Merge files from the given branch into the current branch. */
+                String givenBranchName = args[1];
+                if(Repository.checkRepositoryExist()) {
+                    Repository.initBranch();
+                    Repository.mergeGivenBranchToCurrent(givenBranchName);
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             default:
                 Repository.exitRepository("No command with that name exists.");

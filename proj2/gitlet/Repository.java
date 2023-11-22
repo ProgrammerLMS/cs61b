@@ -570,21 +570,10 @@ public class Repository {
         Commit givenCommit = Utils.readObject(file, Commit.class);
         Commit currentCommit = getCurrentLocalBranchHead();
         if (currentCommit != null) {
-            File unpresentFile, presentFile, untrackedFile;
+            File unpresentFile, presentFile;
             Map<String, String> currentCommitFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
-            for (String givenFile : givenCommitFiles.keySet()) {
-                if (!currentCommitFiles.containsKey(givenFile)) {
-                    untrackedFile = Utils.join(CWD, givenFile);
-                    if (untrackedFile.exists()) {
-                        String newContent = Utils.readContentsAsString(untrackedFile);
-                        String oldContent = getFileContentFromBlob(givenCommitFiles.get(givenFile));
-                        if (!newContent.equals(oldContent)) {
-                            exitRepository("There is an untracked file in the way; delete it, or add and commit it first.");
-                        }
-                    }
-                }
-            }
+            checkOverwrite(givenCommit, currentCommit);
             for (String currentFile : currentCommitFiles.keySet()) {
                 if (!givenCommitFiles.containsKey(currentFile)) {
                     unpresentFile = Utils.join(CWD, currentFile);
@@ -609,6 +598,98 @@ public class Repository {
             stage.clear();
             Utils.writeObject(STAGE_FILE, stage);
         }
+    }
+
+    private static void checkOverwrite(Commit givenCommit, Commit currentCommit) {
+        File untrackedFile;
+        Map<String, String> currentCommitFiles = currentCommit.getCommitFiles();
+        Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
+        for (String givenFile : givenCommitFiles.keySet()) {
+            if (!currentCommitFiles.containsKey(givenFile)) {
+                untrackedFile = Utils.join(CWD, givenFile);
+                if (untrackedFile.exists()) {
+                    String newContent = Utils.readContentsAsString(untrackedFile);
+                    String oldContent = getFileContentFromBlob(givenCommitFiles.get(givenFile));
+                    if (!newContent.equals(oldContent)) {
+                        exitRepository("There is an untracked file in the way; " +
+                                "delete it, or add and commit it first.");
+                    }
+                }
+            }
+        }
+    }
+
+    /* Differences from real git:
+       Real Git does a more subtle job of merging files, displaying conflicts
+       only in places where both files have changed since the split point.
+
+       Real Git has a different way to decide which of multiple possible split points to use.
+
+       Real Git will force the user to resolve the merge conflicts before committing to complete the merge.
+       Gitlet just commits the merge, conflicts and all
+       so that you must use a separate commit to resolve problems.
+
+       Real Git will complain if there are unstaged changes to a file that would be changed by a merge.
+       You may do so as well if you want, but we will not test that case.
+     * */
+    public static void mergeGivenBranchToCurrent(String givenBranchName) {
+        Stage stage;
+        if (STAGE_FILE.exists()) {
+            stage = Utils.readObject(STAGE_FILE, Stage.class);
+        } else {
+            stage = new Stage();
+        }
+        if (stage.getAddedFiles().size() != 0 || stage.getRemovedFiles().size() != 0) {
+            exitRepository("You have uncommitted changes.");
+        }
+        if (givenBranchName.equals(currentBranchName)) {
+            exitRepository("Cannot merge a branch with itself.");
+        }
+        File branchFile = Utils.join(LOCAL_BRANCH_DIR, givenBranchName);
+        if (!branchFile.exists()) {
+            exitRepository("A branch with that name does not exist.");
+        }
+        /* check overwrite */
+        String currentBranchHeadId = getCurrentLocalBranchHeadId();
+        String givenBranchHeadId = Utils.readContentsAsString(branchFile);
+        Commit currentCommit = getCurrentLocalBranchHead();
+        Commit givenCommit = Utils.readObject(Utils.join(COMMIT_DIR, givenBranchHeadId), Commit.class);
+        if (currentCommit != null) {
+            checkOverwrite(givenCommit, currentCommit);
+        }
+        /* find the split point */
+        String splitPointId = getSplitPoint(currentBranchHeadId, givenBranchHeadId);
+        /* If the split point is the same commit as the given branch,
+        then we do nothing and operation ends with the message */
+        if (splitPointId.equals(givenBranchHeadId)) {
+            exitRepository("Given branch is an ancestor of the current branch.");
+        }
+        /* If the split point is the current branch
+           then the effect is to check out the given branch
+           and operation ends after printing the message */
+        if (splitPointId.equals(currentBranchHeadId)) {
+            checkoutToGivenBranch(givenBranchName);
+            exitRepository("Current branch fast-forwarded.");
+        }
+    }
+
+    private static String getSplitPoint(String currentBranchHeadId, String givenBranchHeadId) {
+        List<String> currenBranchNode = new ArrayList<>();
+        while (!currentBranchHeadId.equals("")) {
+            currenBranchNode.add(currentBranchHeadId);
+            File file = Utils.join(COMMIT_DIR, currentBranchHeadId);
+            Commit commit = Utils.readObject(file, Commit.class);
+            currentBranchHeadId = commit.getParentCommitId();
+        }
+        while (!givenBranchHeadId.equals("")) {
+            if(currenBranchNode.contains(givenBranchHeadId)) {
+                return givenBranchHeadId;
+            }
+            File file = Utils.join(COMMIT_DIR, givenBranchHeadId);
+            Commit commit = Utils.readObject(file, Commit.class);
+            givenBranchHeadId = commit.getParentCommitId();
+        }
+        return "";
     }
 
     public static void exitRepository(String message) {
