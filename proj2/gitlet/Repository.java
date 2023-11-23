@@ -400,11 +400,13 @@ public class Repository {
         /* branch */
         System.out.println("=== Branches ===");
         List<String> branchNames = Utils.plainFilenamesIn(LOCAL_BRANCH_DIR);
-        for (String branchName : branchNames) {
-            if (branchName.equals(currentBranchName)) {
-                System.out.println("*" + branchName);
-            } else {
-                System.out.println(branchName);
+        if (branchNames != null) {
+            for (String branchName : branchNames) {
+                if (branchName.equals(currentBranchName)) {
+                    System.out.println("*" + branchName);
+                } else {
+                    System.out.println(branchName);
+                }
             }
         }
         System.out.println();
@@ -566,9 +568,7 @@ public class Repository {
         if (!file.exists()) {
             exitRepository("A branch with that name does not exist.");
         }
-        if (!file.isDirectory()) {
-           file.delete();
-        }
+        Utils.notRestrictedDelete(file);
     }
 
     /* in real git, this is reset [id] -- hard */
@@ -671,6 +671,7 @@ public class Repository {
             checkOverwrite(givenCommit, currentCommit);
         }
         /* find the split point */
+        boolean hasConflict = false;
         String splitPointId = getSplitPoint(currentBranchHeadId, givenBranchHeadId);
         /* If the split point is the same commit as the given branch,
         then we do nothing and operation ends with the message */
@@ -691,45 +692,73 @@ public class Repository {
             Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
             Map<String, String> splitPointFiles = splitPoint.getCommitFiles();
             for (String currentFileName : currentCommitFiles.keySet()) {
-                /* Any files that have been modified in the given branch
-                   since the split point, but not modified in the current branch
-                   since the split point should be changed to their versions
-                   in the given branch,
-                   checked out from the commit at the front of the given branch.
-                   These files should then all be automatically staged*/
                 if (currentCommitFiles.get(currentFileName).equals(
                         splitPointFiles.getOrDefault(currentFileName, ""))
                 ) {
+                    /* 1.Any files that have been modified in the given branch
+                       since the split point, but not modified in the current branch
+                       since the split point should be changed to their versions
+                       in the given branch,which means
+                       checked out from the commit at the front of the given branch.
+                       These files should then all be automatically staged */
                     if (!givenCommitFiles.getOrDefault(currentFileName, "").equals(
                         splitPointFiles.getOrDefault(currentFileName, "")
                     )) {
                         checkoutFileToGivenCommit(currentFileName, givenBranchHeadId);
                         addFileToStage(currentFileName);
                     }
+                    /* 6.Any files present at the split point,
+                       unmodified in the current branch,
+                       and absent in the given branch
+                       should be removed and untracked. */
+                    if (!givenCommitFiles.containsKey(currentFileName)) {
+                        removeFileFromStageAndCWD(currentFileName);
+                    }
                 }
-                /* Any files that have been modified in both
+                /* 3.1 Any files that have been modified in both
                    the current and given branch in the same way,
                    both files now have the same content or were both removed
                    are left unchanged by the merge. */
-                if (currentCommitFiles.get(currentFileName).equals(
-                        givenCommitFiles.getOrDefault(currentFileName, "")
-                )) {
-                    continue;
-                }
-                /* If a file was removed from both the current and given branch
+
+                /* 3.2 If a file was removed from both the current and given branch
                    but a file of the same name is present in the working directory
                    it is left alone and continues to be absent,
                    not tracked nor staged in the merge. */
+
+                /* 4.Any files that were not present at the split point
+                  and are present only in the current branch
+                  should remain as they are. */
                 if (!splitPointFiles.containsKey(currentFileName)
                         && !givenCommitFiles.containsKey(currentFileName)) {
                     continue;
                 }
+                /* 8.Any files modified in different ways in the current
+                   and given branches are in conflict. */
+                if (!currentCommitFiles.get(currentFileName).equals(
+                        splitPointFiles.getOrDefault(currentFileName, "")
+                    )
+                    && !givenCommitFiles.getOrDefault(currentFileName, "").equals(
+                        splitPointFiles.getOrDefault(currentFileName, "")
+                    )
+                    && !currentCommitFiles.get(currentFileName).equals(
+                         givenCommitFiles.getOrDefault(currentFileName, "")
+                )) {
+                    hasConflict = true;
+                    handleConflict(currentCommitFiles, givenCommitFiles, currentFileName);
+                }
+
             }
             for (String givenCommitFileName : givenCommitFiles.keySet()) {
                 if (splitPointFiles.getOrDefault(givenCommitFileName, "").equals(
                         givenCommitFiles.get(givenCommitFileName)
                 )) {
-                    /* Any files that have been modified in the current branch
+                    /* 7.Any files present at the split point
+                       unmodified in the given branch
+                       and absent in the current branch should remain absent. */
+                    if (!currentCommitFiles.containsKey(givenCommitFileName)) {
+                        continue;
+                    }
+                    /* 2.Any files that have been modified in the current branch
                        but not in the given branch since the split point
                        should stay as they are. */
                     if (!currentCommitFiles.getOrDefault(givenCommitFileName, "").equals(
@@ -739,15 +768,38 @@ public class Repository {
                     }
                 }
 
+                /* 5.Any files that were not present at the split point
+                   and are present only in the given branch
+                   should be checked out and staged. */
                 if (!currentCommitFiles.containsKey(givenCommitFileName)
                         && !splitPointFiles.containsKey(givenCommitFileName)) {
                     checkoutFileToGivenCommit(givenCommitFileName, givenBranchHeadId);
                     addFileToStage(givenCommitFileName);
                 }
-            }
-            // update head
 
-            // update stage
+                /* 8.Any files modified in different ways in the current
+                   and given branches are in conflict. */
+                if (!currentCommitFiles.get(givenCommitFileName).equals(
+                        splitPointFiles.getOrDefault(givenCommitFileName, "")
+                    )
+                        && !givenCommitFiles.getOrDefault(givenCommitFileName, "").equals(
+                        splitPointFiles.getOrDefault(givenCommitFileName, "")
+                    )
+                        && !currentCommitFiles.get(givenCommitFileName).equals(
+                        givenCommitFiles.getOrDefault(givenCommitFileName, "")
+                )) {
+                    hasConflict = true;
+                    handleConflict(currentCommitFiles, givenCommitFiles, givenCommitFileName);
+                }
+            }
+
+
+            if (hasConflict) {
+                System.out.println("Encountered a merge conflict.");
+            }
+            // new commit
+            String message = "Merged " + givenBranchName + " into " + currentBranchName + ".";
+            clearStageAndCommit(message, new Date());
         }
     }
 
@@ -768,6 +820,39 @@ public class Repository {
             givenBranchHeadId = commit.getParentCommitId();
         }
         return "";
+    }
+
+    // TODO
+    private static void handleConflict(Map<String,String> currentCommitFiles,
+                                       Map<String,String> givenCommitFiles,
+                                       String filename) {
+        String currentContent;
+        String givenContent;
+        File blobFile;
+        Blob blob;
+        if (currentCommitFiles.containsKey(filename)) {
+            blobFile = Utils.join(BLOB_DIR, currentCommitFiles.get(filename));
+            blob = Utils.readObject(blobFile, Blob.class);
+            currentContent = blob.getContent();
+        } else {
+            currentContent = "";
+        }
+        if (givenCommitFiles.containsKey(filename)) {
+            blobFile = Utils.join(BLOB_DIR, givenCommitFiles.get(filename));
+            blob = Utils.readObject(blobFile, Blob.class);
+            givenContent = blob.getContent();
+        } else {
+            givenContent = "";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("<<<<<<< HEAD\n");
+        sb.append(currentContent);
+        sb.append("=======\n");
+        sb.append(givenContent);
+        sb.append(">>>>>>>\n");
+        File newConflictFile = Utils.join(CWD, filename);
+        Utils.writeContents(newConflictFile, sb.toString());
+        addFileToStage(filename);
     }
 
     public static void exitRepository(String message) {
