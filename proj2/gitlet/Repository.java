@@ -282,7 +282,7 @@ public class Repository {
         Utils.writeObject(STAGE_FILE, stage);
         // 2.update refs/heads
         writeCurrentCommitIdIntoCurrentLocalBranch(newCommitId);
-        // 3.write commit into object
+        // 3.write new commit into object
         writeCommitIntoObjects(newCommitId, newCommit);
     }
 
@@ -695,6 +695,14 @@ public class Repository {
                 if (currentCommitFiles.get(currentFileName).equals(
                         splitPointFiles.getOrDefault(currentFileName, ""))
                 ) {
+                    /* 6.Any files present at the split point,
+                       unmodified in the current branch,
+                       and absent in the given branch
+                       should be removed and untracked. */
+                    if (!givenCommitFiles.containsKey(currentFileName)) {
+                        removeFileFromStageAndCWD(currentFileName);
+                        continue;
+                    }
                     /* 1.Any files that have been modified in the given branch
                        since the split point, but not modified in the current branch
                        since the split point should be changed to their versions
@@ -706,13 +714,6 @@ public class Repository {
                     )) {
                         checkoutFileToGivenCommit(currentFileName, givenBranchHeadId);
                         addFileToStage(currentFileName);
-                    }
-                    /* 6.Any files present at the split point,
-                       unmodified in the current branch,
-                       and absent in the given branch
-                       should be removed and untracked. */
-                    if (!givenCommitFiles.containsKey(currentFileName)) {
-                        removeFileFromStageAndCWD(currentFileName);
                     }
                 }
                 /* 3.1 Any files that have been modified in both
@@ -823,9 +824,9 @@ public class Repository {
     }
 
     // TODO
-    private static void handleConflict(Map<String,String> currentCommitFiles,
-                                       Map<String,String> givenCommitFiles,
-                                       String filename) {
+    private static void handleConflict(Map<String,String>
+                                               currentCommitFiles, Map<String,String>
+                                                    givenCommitFiles, String filename) {
         String currentContent;
         String givenContent;
         File blobFile;
