@@ -780,14 +780,14 @@ public class Repository {
 
                 /* 8.Any files modified in different ways in the current
                    and given branches are in conflict. */
-                if (!currentCommitFiles.get(givenCommitFileName).equals(
+                if (!currentCommitFiles.getOrDefault(givenCommitFileName, "").equals(
                         splitPointFiles.getOrDefault(givenCommitFileName, "")
                     )
-                        && !givenCommitFiles.getOrDefault(givenCommitFileName, "").equals(
+                        && !givenCommitFiles.get(givenCommitFileName).equals(
                         splitPointFiles.getOrDefault(givenCommitFileName, "")
                     )
-                        && !currentCommitFiles.get(givenCommitFileName).equals(
-                        givenCommitFiles.getOrDefault(givenCommitFileName, "")
+                        && !currentCommitFiles.getOrDefault(givenCommitFileName, "").equals(
+                        givenCommitFiles.get(givenCommitFileName)
                 )) {
                     hasConflict = true;
                     handleConflict(currentCommitFiles, givenCommitFiles, givenCommitFileName);
@@ -824,9 +824,9 @@ public class Repository {
     }
 
     // TODO
-    private static void handleConflict(Map<String,String>
-                                               currentCommitFiles, Map<String,String>
-                                                    givenCommitFiles, String filename) {
+    private static void handleConflict(
+            Map<String,String> currentCommitFiles, Map<String,String> givenCommitFiles, String filename
+    ) {
         String currentContent;
         String givenContent;
         File blobFile;
