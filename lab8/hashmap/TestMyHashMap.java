@@ -33,6 +33,7 @@ public class TestMyHashMap {
             //make sure put is working via containsKey and get
             assertTrue(null != b.get("hi" + i)
                     && b.containsKey("hi" + i));
+//            System.out.println(i + " " + b.get("hi" + i) + " " + b.containsKey("hi" + i));
         }
         b.clear();
         assertEquals(0, b.size());
