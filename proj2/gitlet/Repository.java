@@ -825,7 +825,9 @@ public class Repository {
 
     // TODO
     private static void handleConflict(
-            Map<String,String> currentCommitFiles, Map<String,String> givenCommitFiles, String filename
+            Map<String, String> currentCommitFiles,
+            Map<String, String> givenCommitFiles,
+            String filename
     ) {
         String currentContent;
         String givenContent;
