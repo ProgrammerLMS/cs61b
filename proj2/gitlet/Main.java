@@ -180,6 +180,39 @@ public class Main {
                     Repository.mergeGivenBranchToCurrent(givenBranchName);
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
+            case "add-remote":
+                // add-remote [remote name] [name of remote directory]/.gitlet
+                validateNumArgs(args, 3);
+                String remoteName = args[1];
+                String directoryName = args[2];
+                if (Repository.checkRepositoryExist()) {
+
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
+            case "rm-remote":
+                // rm-remote [remote name]
+                validateNumArgs(args, 2);
+                String removeRemoteName = args[1];
+                if (Repository.checkRepositoryExist()) {
+
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
+            case "fetch":
+                // fetch [remote name] [remote branch name]
+                validateNumArgs(args, 3);
+                String fetchRemoteName = args[1];
+                String fetchRemoteBranchName = args[2];
+                if (Repository.checkRepositoryExist()) {
+
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
+            case "push":
+                // push [remote name] [remote branch name]
+                validateNumArgs(args, 3);
+                String pushRemoteName = args[1];
+                String puhsRemoteBranchName = args[2];
+                if (Repository.checkRepositoryExist()) {
+
+                } else Repository.exitRepository("Not in an initialized Gitlet directory.");
+            case "pull":
+                // pull [remote name] [remote branch name]
             default:
                 Repository.exitRepository("No command with that name exists.");
         }

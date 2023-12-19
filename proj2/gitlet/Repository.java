@@ -394,23 +394,23 @@ public class Repository {
         }
     }
 
-    // TODO
     public static void showStatusInfo() {
+        StringBuilder statusBuilder = new StringBuilder();
         /* branch */
-        System.out.println("=== Branches ===");
+        statusBuilder.append("=== Branches ===").append("\n");
         List<String> branchNames = Utils.plainFilenamesIn(LOCAL_BRANCH_DIR);
         if (branchNames != null) {
             for (String branchName : branchNames) {
                 if (branchName.equals(currentBranchName)) {
-                    System.out.println("*" + branchName);
+                    statusBuilder.append("*").append(currentBranchName).append("\n");
                 } else {
-                    System.out.println(branchName);
+                    statusBuilder.append(branchName).append("\n");
                 }
             }
         }
-        System.out.println();
+        statusBuilder.append("\n");
         /* stage */
-        System.out.println("=== Staged Files ===");
+        statusBuilder.append("=== Staged Files ===").append("\n");
         Stage stage;
         if (STAGE_FILE.exists()) {
             stage = Utils.readObject(STAGE_FILE, Stage.class);
@@ -418,21 +418,79 @@ public class Repository {
             stage = new Stage();
         }
         for (String addedFile : stage.getAddedFiles().keySet()) {
-            System.out.println(addedFile);
+            statusBuilder.append(addedFile).append("\n");
         }
-        System.out.println();
+        statusBuilder.append("\n");
         /* remove */
-        System.out.println("=== Removed Files ===");
+        statusBuilder.append("=== Removed Files ===").append("\n");
         for (String removedFile : stage.getRemovedFiles()) {
-            System.out.println(removedFile);
+            statusBuilder.append(removedFile).append("\n");
         }
-        System.out.println();
+        statusBuilder.append("\n");
         /* not stage */
-        System.out.println("=== Modifications Not Staged For Commit ===");
-        System.out.println();
-        /* untracked */
-        System.out.println("=== Untracked Files ===");
-        System.out.println();
+        statusBuilder.append("=== Modifications Not Staged For Commit ===").append("\n");
+        List<String> modifiedNotStageFiles = new ArrayList<>();
+        Set<String> deletedNotStageFiles = new HashSet<>();
+        Map<String, String> currentFilesMap = getCurrentFilesMap();
+        Map<String, String> trackedFilesMap = getCurrentLocalBranchHead().getCommitFiles();
+
+        trackedFilesMap.putAll(stage.getAddedFiles());
+        for (String filename : stage.getRemovedFiles()) {
+            trackedFilesMap.remove(filename);
+        }
+
+        for (Map.Entry<String, String> entry : trackedFilesMap.entrySet()) {
+            String filename = entry.getKey();
+            String blobId = entry.getValue();
+            String currentFileBlobId = currentFilesMap.get(filename);
+            if (currentFileBlobId != null) {
+                if (!currentFileBlobId.equals(blobId)) {
+                    // 1. Tracked in the current commit, changed in the working directory, but not staged; or
+                    // 2. Staged for addition, but with different contents than in the working directory.
+                    modifiedNotStageFiles.add(filename);
+                }
+                currentFilesMap.remove(filename);
+            } else {
+                // 3. Staged for addition, but deleted in the working directory; or
+                // 4. Not staged for removal, but tracked in the current commit and deleted from the working directory.
+                modifiedNotStageFiles.add(filename);
+                deletedNotStageFiles.add(filename);
+            }
+        }
+
+        modifiedNotStageFiles.sort(String::compareTo);
+
+        for (String filename : modifiedNotStageFiles) {
+            statusBuilder.append(filename);
+            if (deletedNotStageFiles.contains(filename)) {
+                statusBuilder.append(" ").append("(deleted)");
+            } else {
+                statusBuilder.append(" ").append("(modified)");
+            }
+            statusBuilder.append("\n");
+        }
+        statusBuilder.append("\n");
+
+        /* untracked files */
+        statusBuilder.append("=== Untracked Files ===").append("\n");
+        for (String filename : currentFilesMap.keySet()) {
+            statusBuilder.append(filename).append("\n");
+        }
+        statusBuilder.append("\n");
+
+        System.out.print(statusBuilder);
+    }
+
+    private static Map<String, String> getCurrentFilesMap() {
+        Map<String, String> filesMap = new HashMap<>();
+        List<String> currentFiles = Utils.plainFilenamesIn(CWD);
+        for (String filename : currentFiles) {
+            File file = Utils.join(CWD, filename);
+            String content = Utils.readContentsAsString(file);
+            String blobId = Utils.sha1(filename + content);
+            filesMap.put(filename, blobId);
+        }
+        return filesMap;
     }
 
 
