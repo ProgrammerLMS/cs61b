@@ -56,7 +56,7 @@ public class Main {
                     if(message.length() == 0) {
                         Repository.exitRepository("Please enter a commit message.");
                     }
-                    Repository.clearStageAndCommit(message, date);
+                    Repository.clearStageAndCommit(message, date, "");
                 } else Repository.exitRepository("Not in an initialized Gitlet directory.");
                 break;
             case "rm":

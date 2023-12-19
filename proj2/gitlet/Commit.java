@@ -38,11 +38,12 @@ public class Commit implements Serializable {
     /* <fileName, blobId> */
     private Map<String, String> commitFiles;
 
-    public Commit(String message, Date timestamp, String parentCommitId) {
+    public Commit(String message, Date timestamp,
+                  String parentCommitId, String secondParentCommitId) {
         this.message = message;
         this.timestamp = timestamp;
         this.parentCommitId = parentCommitId;
-        this.secondParentCommitId = "";
+        this.secondParentCommitId = secondParentCommitId;
         commitFiles = new HashMap<>();
     }
 

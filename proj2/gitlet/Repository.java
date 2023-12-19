@@ -84,7 +84,7 @@ public class Repository {
         String obj = initMessage + initDate;
         String commitId = Utils.sha1(obj);
         // init commit
-        Commit commit = new Commit(initMessage, initDate, "");
+        Commit commit = new Commit(initMessage, initDate, "", "");
         writeCommitIntoObjects(commitId, commit);
         // local"master" branch head and HEAD file both point at the init commit
         writeCurrentCommitIdIntoCurrentLocalBranch(commitId);
@@ -244,13 +244,14 @@ public class Repository {
     /* ? Each commit is identified by its SHA-1 id,
        which must include the blob references of its files,
        parent reference, log message, and commit time. ? */
-    public static void clearStageAndCommit(String message, Date date) {
+    public static void clearStageAndCommit(String message, Date date,
+                                           String secondParentId) {
         String obj = message + date.toString();
         String newCommitId = Utils.sha1(obj);
         // how we get the last commitId? -> current branch head point at it
         String currentCommitId = getCurrentLocalBranchHeadId();
         Commit currentCommit = getCurrentLocalBranchHead();
-        Commit newCommit = new Commit(message, date, currentCommitId);
+        Commit newCommit = new Commit(message, date, currentCommitId, secondParentId);
         /* default commit is same as it parent commit */
         if (currentCommit != null) {
             newCommit.setCommitFiles(currentCommit.getCommitFiles());
@@ -456,7 +457,7 @@ public class Repository {
         }
     }
 
-    private static String getLongCommitId (String shortCommitId) {
+    private static String getLongCommitId(String shortCommitId) {
         List<String> commitIds = Utils.plainFilenamesIn(COMMIT_DIR);
         if (commitIds != null) {
             for (String longCommitId : commitIds) {
@@ -822,7 +823,7 @@ public class Repository {
             }
             // new commit
             String message = "Merged " + givenBranchName + " into " + currentBranchName + ".";
-            clearStageAndCommit(message, new Date());
+            clearStageAndCommit(message, new Date(), givenBranchHeadId);
         }
     }
 
@@ -853,7 +854,7 @@ public class Repository {
         Commit splitPoint =  splits.stream()
                 .max(Comparator.comparing(Commit::getTimestamp))
                 .get();
-        return Utils.sha1(splitPoint.getMessage() + splitPoint.getTimestamp());
+        return Utils.sha1(splitPoint.getMessage() + splitPoint.getTimestamp().toString());
     }
 
     private static void dfs(String commitId, Set<String> commits, List<Commit> splits) {
