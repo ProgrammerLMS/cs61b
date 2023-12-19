@@ -442,17 +442,20 @@ public class Repository {
         for (Map.Entry<String, String> entry : trackedFilesMap.entrySet()) {
             String filename = entry.getKey();
             String blobId = entry.getValue();
-            String currentFileBlobId = currentFilesMap.get(filename);
-            if (currentFileBlobId != null) {
+            String currentFileBlobId = currentFilesMap.getOrDefault(filename, "");
+            if (!currentFileBlobId.equals("")) {
                 if (!currentFileBlobId.equals(blobId)) {
-                    // 1. Tracked in the current commit, changed in the working directory, but not staged; or
-                    // 2. Staged for addition, but with different contents than in the working directory.
+                    /* 1. Tracked in the current commit, changed
+                       in the working directory, but not staged; or*/
+                    /* 2. Staged for addition, but with different contents
+                       than in the working directory.*/
                     modifiedNotStageFiles.add(filename);
                 }
                 currentFilesMap.remove(filename);
             } else {
                 // 3. Staged for addition, but deleted in the working directory; or
-                // 4. Not staged for removal, but tracked in the current commit and deleted from the working directory.
+                // 4. Not staged for removal, but tracked in the current
+                // commit and deleted from the working directory.
                 modifiedNotStageFiles.add(filename);
                 deletedNotStageFiles.add(filename);
             }
