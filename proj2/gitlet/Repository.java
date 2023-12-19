@@ -668,17 +668,23 @@ public class Repository {
             Map<String, String> currentCommitFiles = currentCommit.getCommitFiles();
             Map<String, String> givenCommitFiles = givenCommit.getCommitFiles();
             checkOverwrite(givenCommit, currentCommit);
+            for (String givenFilename : givenCommitFiles.keySet()) {
+                File givenFile = Utils.join(CWD, givenFilename);
+                String content = getFileContentFromBlob(givenCommitFiles.get(givenFilename));
+                Utils.writeContents(givenFile, content);
+            }
             for (String currentFile : currentCommitFiles.keySet()) {
                 if (!givenCommitFiles.containsKey(currentFile)) {
                     unpresentFile = Utils.join(CWD, currentFile);
                     if (unpresentFile.exists()) {
                         Utils.restrictedDelete(unpresentFile);
                     }
-                } else {
-                    presentFile = Utils.join(CWD, currentFile);
-                    String newContent = getFileContentFromBlob(givenCommitFiles.get(currentFile));
-                    Utils.writeContents(presentFile, newContent);
                 }
+//                else {
+//                    presentFile = Utils.join(CWD, currentFile);
+//                    String newContent = getFileContentFromBlob(givenCommitFiles.get(currentFile));
+//                    Utils.writeContents(presentFile, newContent);
+//                }
             }
             // move the current branch’s head to that commit node
             writeCurrentCommitIdIntoCurrentLocalBranch(commitId);
