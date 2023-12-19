@@ -3,10 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /*  Represents a gitlet repository.
  *  The repository also maintains a mapping from branch heads to reference of commits
@@ -396,6 +393,7 @@ public class Repository {
         }
     }
 
+    // TODO
     public static void showStatusInfo() {
         /* branch */
         System.out.println("=== Branches ===");
@@ -458,10 +456,28 @@ public class Repository {
         }
     }
 
+    private static String getLongCommitId (String shortCommitId) {
+        List<String> commitIds = Utils.plainFilenamesIn(COMMIT_DIR);
+        if (commitIds != null) {
+            for (String longCommitId : commitIds) {
+                if (longCommitId.substring(0, 8).equals(shortCommitId)) {
+                    return longCommitId;
+                }
+            }
+        }
+        return null;
+    }
+
     /* in real git, it won’t do a checkout that would overwrite or undo changes
        sucn as additions or removals that you have staged.*/
     public static void checkoutFileToGivenCommit(String fileName, String commitId) {
         File file = Utils.join(CWD, fileName);
+        if (commitId.length() == 8) {
+            commitId = getLongCommitId(commitId);
+        }
+        if (commitId == null) {
+            exitRepository("No commit with that id exists.");
+        }
         File commitFile = Utils.join(COMMIT_DIR, commitId);
         if (!commitFile.exists()) {
             exitRepository("No commit with that id exists.");
@@ -573,6 +589,12 @@ public class Repository {
 
     /* in real git, this is reset [id] -- hard */
     public static void resetHard(String commitId) {
+        if (commitId.length() == 8) {
+            commitId = getLongCommitId(commitId);
+        }
+        if (commitId == null) {
+            exitRepository("No commit with that id exists.");
+        }
         File file = Utils.join(COMMIT_DIR, commitId);
         if (!file.exists()) {
             exitRepository("No commit with that id exists.");
@@ -804,26 +826,53 @@ public class Repository {
         }
     }
 
+//    private static String getSplitPoint(String currentBranchHeadId, String givenBranchHeadId) {
+//        List<String> currenBranchNode = new ArrayList<>();
+//        while (!currentBranchHeadId.equals("")) {
+//            currenBranchNode.add(currentBranchHeadId);
+//            File file = Utils.join(COMMIT_DIR, currentBranchHeadId);
+//            Commit commit = Utils.readObject(file, Commit.class);
+//            currentBranchHeadId = commit.getParentCommitId();
+//        }
+//        while (!givenBranchHeadId.equals("")) {
+//            if (currenBranchNode.contains(givenBranchHeadId)) {
+//                return givenBranchHeadId;
+//            }
+//            File file = Utils.join(COMMIT_DIR, givenBranchHeadId);
+//            Commit commit = Utils.readObject(file, Commit.class);
+//            givenBranchHeadId = commit.getParentCommitId();
+//        }
+//        return "";
+//    }
+
     private static String getSplitPoint(String currentBranchHeadId, String givenBranchHeadId) {
-        List<String> currenBranchNode = new ArrayList<>();
-        while (!currentBranchHeadId.equals("")) {
-            currenBranchNode.add(currentBranchHeadId);
-            File file = Utils.join(COMMIT_DIR, currentBranchHeadId);
-            Commit commit = Utils.readObject(file, Commit.class);
-            currentBranchHeadId = commit.getParentCommitId();
-        }
-        while (!givenBranchHeadId.equals("")) {
-            if (currenBranchNode.contains(givenBranchHeadId)) {
-                return givenBranchHeadId;
-            }
-            File file = Utils.join(COMMIT_DIR, givenBranchHeadId);
-            Commit commit = Utils.readObject(file, Commit.class);
-            givenBranchHeadId = commit.getParentCommitId();
-        }
-        return "";
+        List<Commit> splits = new ArrayList<>();
+        Set<String> commits = new HashSet<>();
+        dfs(currentBranchHeadId, commits, splits);
+        dfs(givenBranchHeadId, commits, splits);
+        Commit splitPoint =  splits.stream()
+                .max(Comparator.comparing(Commit::getTimestamp))
+                .get();
+        return Utils.sha1(splitPoint.getMessage() + splitPoint.getTimestamp());
     }
 
-    // TODO
+    private static void dfs(String commitId, Set<String> commits, List<Commit> splits) {
+        if (commitId.equals("")) {
+            return;
+        }
+        File file = Utils.join(COMMIT_DIR, commitId);
+        Commit commit = Utils.readObject(file, Commit.class);
+        if (commits.contains(commitId)) {
+            if (splits != null) {
+                splits.add(commit);
+            }
+            return;
+        }
+        commits.add(commitId);
+        dfs(commit.getParentCommitId(), commits, splits);
+        dfs(commit.getSecondParentCommitId(), commits, splits);
+    }
+
     private static void handleConflict(
             Map<String, String> currentCommitFiles,
             Map<String, String> givenCommitFiles,
